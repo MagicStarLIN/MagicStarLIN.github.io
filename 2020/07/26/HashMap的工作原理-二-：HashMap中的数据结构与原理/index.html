@@ -110,6 +110,169 @@
 <p>​    <strong>我们在HashMap中采用的正是链表法，而且在链表过长时还会转化成为红黑树，来保证效率。</strong></p>
 </li>
 </ol>
+<h3 id="3、HashMap中的数据结构实现"><a href="#3、HashMap中的数据结构实现" class="headerlink" title="3、HashMap中的数据结构实现"></a>3、HashMap中的数据结构实现</h3><h4 id="Bucket数组"><a href="#Bucket数组" class="headerlink" title="Bucket数组"></a>Bucket数组</h4><pre><code class="java">    /**
+     * The table, initialized on first use, and resized as
+     * necessary. When allocated, length is always a power of two.
+     * (We also tolerate length zero in some operations to allow
+     * bootstrapping mechanics that are currently not needed.)
+     */
+    transient Node&lt;K,V&gt;[] table;</code></pre>
+<p>Bucket数组就是一个Node&lt;K,V&gt;类型的数组，使用了<code>transient</code>关键字修饰</p>
+<blockquote>
+<ol>
+<li>一旦变量被transient修饰，变量将不再是对象持久化的一部分，该变量内容在序列化后无法获得访问。</li>
+<li>transient关键字只能修饰变量，而不能修饰方法和类。注意，本地变量是不能被transient关键字修饰的。变量如果是用户自定义类变量，则该类需要实现Serializable接口。</li>
+<li>一个静态变量不管是否被transient修饰，均不能被序列化。 </li>
+</ol>
+</blockquote>
+<p>在HashMap源码中，我们经常可以看到transient修饰其固有属性，大概是为了序列化的安全性。</p>
+<h4 id="Node-lt-K-V-gt"><a href="#Node-lt-K-V-gt" class="headerlink" title="Node&lt;K, V&gt;"></a>Node&lt;K, V&gt;</h4><pre><code class="java">/**
+     * Basic hash bin node, used for most entries.  (See below for
+     * TreeNode subclass, and in LinkedHashMap for its Entry subclass.)
+     */
+    static class Node&lt;K,V&gt; implements Map.Entry&lt;K,V&gt; {
+        final int hash;
+        final K key;
+        V value;
+        Node&lt;K,V&gt; next;
+
+        Node(int hash, K key, V value, Node&lt;K,V&gt; next) {
+            this.hash = hash;
+            this.key = key;
+            this.value = value;
+            this.next = next;
+        }
+
+        public final K getKey()        { return key; }
+        public final V getValue()      { return value; }
+        public final String toString() { return key + &quot;=&quot; + value; }
+
+        public final int hashCode() {
+            return Objects.hashCode(key) ^ Objects.hashCode(value);
+        }
+
+        public final V setValue(V newValue) {
+            V oldValue = value;
+            value = newValue;
+            return oldValue;
+        }
+
+        public final boolean equals(Object o) {
+            if (o == this)
+                return true;
+            if (o instanceof Map.Entry) {
+                Map.Entry&lt;?,?&gt; e = (Map.Entry&lt;?,?&gt;)o;
+                if (Objects.equals(key, e.getKey()) &amp;&amp;
+                    Objects.equals(value, e.getValue()))
+                    return true;
+            }
+            return false;
+        }
+    }</code></pre>
+<p>Node类是HashMap的一个静态内部类，实现了Map.Entry&lt;K, V&gt;接口。</p>
+<p>从代码中我们可以看到，Node的属性有K的Hash值，具体的Key、Value以及指向下一个Node的Next指针。</p>
+<p>同时，Node也对其父接口中的抽象方法进行了具体的实现. </p>
+<h4 id="EntrySet"><a href="#EntrySet" class="headerlink" title="EntrySet"></a>EntrySet</h4><p>通常我们在遍历一个Map的时候，通常直接使用使用它的<code>entrySet()</code>方法进行遍历，比如：</p>
+<pre><code class="java">HashMap&lt;String, String&gt; hashMap = new HashMap&lt;&gt;();
+        //set sth into hashmap ...
+        for (Map.Entry&lt;String, String&gt; stringStringEntry : hashMap.entrySet()) {
+            System.out.println(stringStringEntry.getKey());
+            System.out.println(stringStringEntry.getValue());
+        }</code></pre>
+<p>在HashMap的源码中，我们可以看到entrySet()方法，如下：</p>
+<pre><code class="java">/**
+ * Returns a {@link Set} view of the mappings contained in this map.
+ * The set is backed by the map, so changes to the map are
+ * reflected in the set, and vice-versa.  If the map is modified
+ * while an iteration over the set is in progress (except through
+ * the iterator&#39;s own &lt;tt&gt;remove&lt;/tt&gt; operation, or through the
+ * &lt;tt&gt;setValue&lt;/tt&gt; operation on a map entry returned by the
+ * iterator) the results of the iteration are undefined.  The set
+ * supports element removal, which removes the corresponding
+ * mapping from the map, via the &lt;tt&gt;Iterator.remove&lt;/tt&gt;,
+ * &lt;tt&gt;Set.remove&lt;/tt&gt;, &lt;tt&gt;removeAll&lt;/tt&gt;, &lt;tt&gt;retainAll&lt;/tt&gt; and
+ * &lt;tt&gt;clear&lt;/tt&gt; operations.  It does not support the
+ * &lt;tt&gt;add&lt;/tt&gt; or &lt;tt&gt;addAll&lt;/tt&gt; operations.
+ *
+ * @return a set view of the mappings contained in this map
+ */
+public Set&lt;Map.Entry&lt;K,V&gt;&gt; entrySet() {
+    Set&lt;Map.Entry&lt;K,V&gt;&gt; es;
+    return (es = entrySet) == null ? (entrySet = new EntrySet()) : es;
+}</code></pre>
+<p>这里就不得不让人发觉一个问题，在单纯调用entrySet这个方法的时候，只是返回了一个新的entrySet，那么为什么我们仍然可以在entrySet中访问到HashMap的key和value值呢？</p>
+<p>我们从EntrySet的源码进行分析：</p>
+<pre><code class="java">final class EntrySet extends AbstractSet&lt;Map.Entry&lt;K,V&gt;&gt; {
+    public final int size()                 { return size; }
+    public final void clear()               { HashMap.this.clear(); }
+    public final Iterator&lt;Map.Entry&lt;K,V&gt;&gt; iterator() {
+        return new EntryIterator();
+    }
+    public final boolean contains(Object o) {
+        if (!(o instanceof Map.Entry))
+            return false;
+        Map.Entry&lt;?,?&gt; e = (Map.Entry&lt;?,?&gt;) o;
+        Object key = e.getKey();
+        Node&lt;K,V&gt; candidate = getNode(hash(key), key);
+        return candidate != null &amp;&amp; candidate.equals(e);
+    }
+    public final boolean remove(Object o) {
+        if (o instanceof Map.Entry) {
+            Map.Entry&lt;?,?&gt; e = (Map.Entry&lt;?,?&gt;) o;
+            Object key = e.getKey();
+            Object value = e.getValue();
+            return removeNode(hash(key), key, value, true, true) != null;
+        }
+        return false;
+    }
+    public final Spliterator&lt;Map.Entry&lt;K,V&gt;&gt; spliterator() {
+        return new EntrySpliterator&lt;&gt;(HashMap.this, 0, -1, 0, 0);
+    }
+    public final void forEach(Consumer&lt;? super Map.Entry&lt;K,V&gt;&gt; action) {
+        Node&lt;K,V&gt;[] tab;
+        if (action == null)
+            throw new NullPointerException();
+        if (size &gt; 0 &amp;&amp; (tab = table) != null) {
+            int mc = modCount;
+            for (int i = 0; i &lt; tab.length; ++i) {
+                for (Node&lt;K,V&gt; e = tab[i]; e != null; e = e.next)
+                    action.accept(e);
+            }
+            if (modCount != mc)
+                throw new ConcurrentModificationException();
+        }
+    }
+}</code></pre>
+<p>首先我们要明确一个问题，EntrySet是继承自AbstractSet类的，也就是说，EntrySet本质上是一个Set集合，而对于一个Set集合，我们应当明白：</p>
+<blockquote>
+<p>Set不提供Get方法，所以我们无法直接获取Set中的元素 . </p>
+<p>对于一个Set集合，我们想要对他进行遍历，只有两个方法：</p>
+<ol>
+<li>使用迭代器Iterator进行迭代</li>
+<li>使用增强for循环</li>
+</ol>
+<p>而增强for循环，本质上就是使用了迭代器。</p>
+</blockquote>
+<p>由于EntrySet只能被迭代器访问到其中元素，所以我们只需要关注Iterator方法中调用的<strong>new EntryIterator()</strong>。</p>
+<pre><code class="java">final class EntryIterator extends HashIterator implements Iterator&lt;Map.Entry&lt;K,V&gt;&gt; {
+    public final Map.Entry&lt;K,V&gt; next() { return nextNode(); }
+}
+
+
+final Node&lt;K,V&gt; nextNode() {
+    Node&lt;K,V&gt;[] t;
+    Node&lt;K,V&gt; e = next;
+    if (modCount != expectedModCount)
+      throw new ConcurrentModificationException();
+    if (e == null)
+      throw new NoSuchElementException();
+    if ((next = (current = e).next) == null &amp;&amp; (t = table) != null) {
+      do {} while (index &lt; t.length &amp;&amp; (next = t[index++]) == null);
+    }
+    return e;
+}</code></pre>
+<p>EntryIterator迭代器的next()方法，是获取HashMap中的next元素，所以实际上在这里迭代到的，是HashMap的元素，这也就是为什么EntrySet是有值的原因.</p>
+<p>​    以上！🙏</p>
 
   </div>
 
