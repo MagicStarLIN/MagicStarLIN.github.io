@@ -31,10 +31,10 @@
 </div>
 
   <div class="navi">
-    <a id="navi_item" href="/#" class="menu-item-link">主页</a>
-    <a id="navi_item" href="/tags" class="menu-item-link">标签</a>
-    <a id="navi_item" href="/about" class="menu-item-link">关于</a>
-    <a id="navi_item" href="/search" class="menu-item-link">搜索</a>
+    <a id="navi_item" href="/#" class="menu-item-link">Home</a>
+    <a id="navi_item" href="/tags" class="menu-item-link">Tags</a>
+    <a id="navi_item" href="/about" class="menu-item-link">About</a>
+    <a id="navi_item" href="/search" class="menu-item-link">Search</a>
     
 </div>
 
@@ -60,15 +60,16 @@
   
 
   <div id="post_content">
-    <h2 id="零、写在前面"><a href="#零、写在前面" class="headerlink" title="零、写在前面"></a>零、写在前面</h2><pre><code>&gt; 众所周知，程序员计数都是从零开始的。
-&gt;
-&gt; 最近实在是太懒惰了😭😭😭</code></pre><p>​    最近是组长给安排了一个组内“分享”，一般来说都是技术分享，但是可能是鉴于我分享不出来什么对他们有用的技术（想想真是好特么的气😠），所以给我定了个主题是“分享公司的人员组织架构、组内服务功能，系统架构”，我人都傻了，组内同事老哥也直说“这我都说不清楚，你让他搞？”；但是还是没有办法，硬着头皮写了写自己知道的，准备了两周，每天都在觉得ppt上写的是一堆废话。</p>
+    <h2 id="零、写在前面"><a href="#零、写在前面" class="headerlink" title="零、写在前面"></a>零、写在前面</h2><blockquote>
+<p> 众所周知，程序员计数都是从零开始的。</p>
+</blockquote>
+<p>​    最近组长给安排了一个组内“分享”，一般来说都是技术分享，但是可能是鉴于我分享不出来什么对他们有用的技术（想想真是好特么的气😠），所以给我定了个主题是“分享公司的人员组织架构、组内服务功能，系统架构”，我人都傻了，组内同事老哥也直说“这我都说不清楚，你让他搞？”；但是还是没有办法，硬着头皮写了写自己知道的，准备了两周，每天都在觉得ppt上写的是一堆废话。</p>
 <img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/IMG_9909.JPG" alt="IMG_9909" style="zoom: 33%;" />
 
 
 
 <p>​    终于在度过了极其自闭的两周，ppt无惊无险的讲完了，上周单休，被小伙伴拉去打了游戏，所以上周学习进度也是0。</p>
-<p>淦！这个题目好像是一个月之前想写的了。。。。</p>
+<p>淦！这个题目好像是一个月之前想写的了,最近实在是太懒惰了😭😭😭。。。。</p>
 <h2 id="一、踩坑"><a href="#一、踩坑" class="headerlink" title="一、踩坑"></a>一、踩坑</h2><p>​    事情从一次普通的需求说起，业务上的代码需要在一个Util类上进行改动，但是同时还是需要调用一些其他service方法，这里就需要通过Spring进行装配，但是改动的方法是一个static的静态方法，这里我就脑抽的直接使用了static关键字修饰引用的service。</p>
 <blockquote>
 <p>其实这里是不对的，Utils是不可以有任何service层的调用的，这里我通过沟通也进行了改动，将service的调用移到了Utils调用之前，将service的调用结果处理后作为Utils的参数。但正因为这样，奉行ctrl c、ctrl v的我，还是把static给复制了过来😅。</p>
@@ -240,7 +241,7 @@ public class ModelController {
 
   
     <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-    <span id="busuanzi_container_site_pv">本文总阅读量：<span id="busuanzi_value_page_pv"></span>次</span>
+    <span id="busuanzi_container_site_pv">This post has been read：<span id="busuanzi_value_page_pv"></span>times</span>
   
   <br/><br/>
 
