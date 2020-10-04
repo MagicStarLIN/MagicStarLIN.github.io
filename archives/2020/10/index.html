@@ -2,7 +2,7 @@
 <html>
 <head>
   <title>
-    hexo博客的部署与图床使用 - liuchanglin &#39;s blog
+    liuchanglin &#39;s blog
   </title>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -42,150 +42,54 @@
 
 
   <div class="main">
-    
-<link rel="stylesheet" href="/css/post.css">
-
-<post>
-
-  <div class="post_title">
-    hexo博客的部署与图床使用
-  </div>
-
-  <br/><br/>
-
+    <div class="list">
   
-  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.1.2/build/styles/xcode.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.1.2/build/styles/xcode>.min.css">
   <script src="/js/highlight.min.js"></script>
   <script>hljs.initHighlightingOnLoad();</script>
   
+  
+<div class=index_list>
 
-  <div id="post_content">
-    <blockquote>
-<p>将博客用hexo搭建好之后，我们应该明白，我们的博客不能一直处于本地环境启动，我们需要把它作为一个可以公共访问的网站来使用.</p>
-<p>并且作为支持markdown语法的博客，在写博文时插入图片也需要图床的设置。</p>
-</blockquote>
-<h2 id="一、使用GitHub-pages部署hexo博客"><a href="#一、使用GitHub-pages部署hexo博客" class="headerlink" title="一、使用GitHub pages部署hexo博客"></a>一、使用GitHub pages部署hexo博客</h2><h3 id="新建仓库"><a href="#新建仓库" class="headerlink" title="新建仓库"></a>新建仓库</h3><p>​    首先第一步，我们需要登录GitHub创建一个仓库，来作为我们博客文章及其他文件的存储地址. 在我们更新或者获取博客时，只需要对这个仓库进行commit等git操作即可完成更新、获取等操作.</p>
-<p><strong>注意</strong></p>
-<p>​    新建仓库的仓库名需要格外注意，我们新建仓库名字必须满足：</p>
-<blockquote>
-<p>“GitHub昵称”.github.io</p>
-</blockquote>
-<p>​    比如 我的GitHub昵称是<code>MagicStarLIN</code>，那么我的仓库名就应该如图所示：</p>
-<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20200523183841443.png" alt="image-20200523183841443" style="zoom:50%;" /></p>
-<p>仓库地址：<a href="https://github.com/MagicStarLIN/MagicStarLIN.github.io.git" target="_blank" rel="noopener">https://github.com/MagicStarLIN/MagicStarLIN.github.io.git</a></p>
-<h3 id="安装git插件"><a href="#安装git插件" class="headerlink" title="安装git插件"></a>安装git插件</h3><p>​    仓库新建完成之后，我们回到我们的hexo目录文件夹下，我们需要安装一个git deploy的插件，这里借助cnpm来完成安装，只需要一个命令。</p>
-<pre><code class="lang-java">$ cnpm install --save hexo-deployer-git
-</code></pre>
-<h3 id="设置-config-yml"><a href="#设置-config-yml" class="headerlink" title="设置_config.yml"></a>设置_config.yml</h3><p>插件完成安装之后，我们需要对yml配置文件进行配置.</p>
-<p>配置主要会在_config.yml文件中的deploy一级属性下进行配置.这里我的github仓库地址为<code>https://github.com/MagicStarLIN/MagicStarLIN.github.io.git</code></p>
-<p>初始的_config.yml文件的deploy属性为：</p>
-<pre><code class="lang-yaml"># Deployment
-## Docs: https://hexo.io/docs/deployment.html
-deploy:
-  type: &#39;&#39;
-</code></pre>
-<p>基本处于什么都没有配置的状态，这里我直接展示我配置之后的yml文件：</p>
-<pre><code class="lang-yaml"># Deployment
-## Docs: https://hexo.io/docs/deployment.html
-deploy:
-  type: git
-  repo: https://github.com/MagicStarLIN/MagicStarLIN.github.io.git
-  branch: master
-</code></pre>
-<h3 id="部署到远端"><a href="#部署到远端" class="headerlink" title="部署到远端"></a>部署到远端</h3><p>使用hexo的命令实现部署至GitHub pages</p>
-<pre><code class="lang-java">$ hexo d
-</code></pre>
-<p>如果之前没有配置过git账号和密码，那么这里第一次部署应该会要求输入GitHub的账号和密码.</p>
-<p>至此，成功之后，就已经完成了博客的部署.我们可以访问<code>&quot;GitHub昵称&quot;.github.io</code>url来直接访问自己的hexo博客.</p>
-<h2 id="二、配置博客图床"><a href="#二、配置博客图床" class="headerlink" title="二、配置博客图床"></a>二、配置博客图床</h2><p>​    我们在写博客的时候，经常需要插入一些图片(比如上面的GitHub仓库截图)，这个时候因为markdown语法的图片插入是基于url的链接访问的. 比如我使用的是<strong>Typora编辑器</strong>来写markdown文档，那么他的图片会自动存储到电脑的某个固定文件夹中，我们在本地查看的markdown文档中的图片，就是访问的电脑中保存的图片. 那么当我们部署到GitHub上的时候就不能查看到博文中的图片了，这里我们就需要借助搭建好的<strong>图床</strong>来进行图片的访问.</p>
-<blockquote>
-<p>图床一般是指储存图片的服务器，有国内和国外之分。国外的图床由于有空间距离等因素决定访问速度很慢影响图片显示速度。国内也分为单线空间、多线空间和cdn加速三种。</p>
-</blockquote>
-<h3 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h3><ul>
-<li>markdown文档编辑器：Typora</li>
-<li>图床：阿里云对象存储OSS</li>
-<li>图片上传工具：PicGo</li>
-</ul>
-<h3 id="图床搭建"><a href="#图床搭建" class="headerlink" title="图床搭建"></a>图床搭建</h3><p>首先购买阿里云的OSS服务.</p>
-<p>访问<a href="https://www.aliyun.com/product/oss/" target="_blank" rel="noopener">阿里云对象存储OSS官网</a>，选择折扣套餐.</p>
-<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20200523213310883.png" alt="image-20200523213310883" style="zoom:50%;" /></p>
-<p>我购买的服务如图，大概一年9元.</p>
-<p>之后进入管理控制台，在Bucket管理中选择创建Bucket.</p>
-<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20200523213700289.png" alt="image-20200523213700289" style="zoom:50%;" /></p>
-<p>这里我选择的Bucket具体细节如图，填写好Bucket名称之后，即可完成创建.</p>
-<h3 id="PicGo配置"><a href="#PicGo配置" class="headerlink" title="PicGo配置"></a>PicGo配置</h3><p>下载PicGo，官方网站：<a href="https://molunerfinn.com/PicGo/" target="_blank" rel="noopener">https://molunerfinn.com/PicGo/</a>. 在官方网站选择下载，之后选择对应版本：</p>
-<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20200523214053775.png" alt="image-20200523214053775" style="zoom:50%;" /></p>
-<p>这里mac系统直接下载.dmg文件即可</p>
-<p>下载完成后，我们需要对其进行配置，链接至我们的阿里云OSS</p>
-<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/截屏2020-05-23 下午9.46.58.png" alt="截屏2020-05-23 下午9.46.58" style="zoom:50%;" /></p>
-<ul>
-<li><p>KeyId/KeySecret：阿里云OSS管理控制台 —&gt; Access Key —&gt; 使用Accesskey</p>
-</li>
-<li><p>存储空间名：即你刚刚创建的Bucket名称</p>
-</li>
-<li><p>存储区域：查看你的Bucket详细信息：</p>
-<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20200523215241237_副本.png" alt="image-20200523215241237_副本" style="zoom:50%;" /></p>
-</li>
-<li><p>存储路径：在你的Bucket管理界面下，选择文件管理：</p>
-<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20200523215521983.png" alt="image-20200523215521983" style="zoom:50%;" /></p>
-<p>将文件名保存为存储路径，注意需要用“/”做结尾</p>
-</li>
-</ul>
-<p>至此，PicGo配置完成.</p>
-<h3 id="Typora配置"><a href="#Typora配置" class="headerlink" title="Typora配置"></a>Typora配置</h3><p>打开Typora偏好设置：</p>
-<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20200523225811663.png" alt="image-20200523225811663" style="zoom:50%;" /></p>
-<p>配置如图.</p>
-<p>完成以上配置后，我么在使用Typora编写文档时，只需要对图片进行右键—&gt;上传图像即可. </p>
-
+  <div class="line_1">
+    <div class="index_post_date">
+      「 October 4th 」
+    </div>
   </div>
 
-  <br/>
+  <a id="index_post_title" href="/2020/10/04/非对称加密——RSA算法/">非对称加密——RSA算法</a><br/>
 
+  <div class="blank">
   
-    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-    <span id="busuanzi_container_site_pv">This post has been read：<span id="busuanzi_value_page_pv"></span>times</span>
-  
-  <br/><br/>
-
-
-  
-
-  <div class="copyright" >
-
-    <a class="license-image" rel="license" href="http://creativecommons.org/licenses/by
--nc
--sa
-/4.0/"><img alt="知识共享许可协议" style="border-width:0" src="https://i.creativecommons.org/l/by
--nc
--sa
-/4.0/80x15.png" />
+    <a class="index_post_tag" href="/tags/Algorithm">
+      Algorithm
     </a>
-
-      <p>本作品采用
-      <a class="license-word-hyper" rel="license" href="http://creativecommons.org/licenses/by
--nc
--sa
-/4.0/">
-        知识共享署名
--非商业性使用
--相同方式共享
-4.0 国际许可协议</a>
-      进行许可。</p>
+  
+    <a class="index_post_tag" href="/tags/RSA">
+      RSA
+    </a>
+  
   </div>
 
+  <div class="index_post_excerpt">
+    
+  </div>
 
-  <div id="top">
-    <a href="#">▲</a>
-    <a href="#footer">▼</a>
+  <!--
+  <a class="more" href="/2020/10/04/非对称加密——RSA算法/">阅读更多</a>
+  -->
+
 </div>
 
-  
-  <script defer src="/js/commento.js"></script>
-<div id="commento"></div>
-<noscript>Please enable JavaScript to load the comments.</noscript>
 
+<div class="page_num">
 
-</post>
+    
+    
+
+</div>
+
+</div>
 
   </div>
 

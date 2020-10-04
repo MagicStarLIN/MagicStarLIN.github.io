@@ -72,36 +72,32 @@
 <p>如果你想引用一段文字，那就使用大于号&gt;</p>
 <blockquote>
 <p>这是一段引用</p>
-</blockquote>
-<blockquote>
 <p>这是另一段引用</p>
 </blockquote>
 <p>效果如下：</p>
 <blockquote>
 <p>这是一段引用</p>
-</blockquote>
-<blockquote>
 <p>这是另一段引用</p>
 </blockquote>
 <p><strong>强调语法</strong></p>
 <p><strong>粗体</strong></p>
 <p>如果你想加粗一段文字，只需要在文字前后加两个*号</p>
-<p>** 我很重要！**</p>
+<p><strong> 我很重要！</strong></p>
 <p>效果如下：</p>
 <p><strong>我很重要哦！</strong></p>
-<p>*<em>斜体 *</em></p>
+<p><strong>斜体 </strong></p>
 <p>如果你想让一段文字倾斜，只需要在文字前后加一个星号*</p>
-<p>*我是比萨斜塔 *</p>
+<p><em>我是比萨斜塔 </em></p>
 <p>效果如下：</p>
 <p><em>我是比萨斜塔</em></p>
 <p><strong>下划线</strong></p>
 <p>如果你想让一段文字加上下划线，只需要在文字前后加一个下划线_</p>
 <p>_ 人是社会性动物_</p>
 <p>效果如下：</p>
-<p><em>人是社会性动物</em></p>
+<p>_人是社会性动物_</p>
 <p><strong>删除线</strong></p>
 <p>如果你想让一段文字加上删除线效果，只需要在文字前后加一个波浪线~</p>
-<p><del>~ 我所说的都是错的</del></p>
+<p>~~ 我所说的都是错的~~</p>
 <p>效果如下：</p>
 <p><del>我所说的都是错的</del></p>
 <p><strong>插入链接</strong></p>
@@ -144,7 +140,7 @@
 <p>段落与段落之间需要强制空一行才能分段。</p>
 <p><strong>分割线</strong></p>
 <p>你可以在一行中使用三个以上的星号*或减号-来创建分割线（注意：行内不能有其他东西）</p>
-<p>-–</p>
+<p>-—</p>
 <hr>
 <p>效果如下：</p>
 <hr>
@@ -155,7 +151,7 @@
 <p>如果你是一个程序员，需要分享自己的代码，那就需要创建代码区块，如果像普通的段落一样显示，格式可能会很糟糕。</p>
 <p>当然，把整块文本放区块里也很常见，比如本文的语法解释部分。</p>
 <p>语法：需要整体内容缩进 4 个空格或是 1 个制表符（tab）</p>
-<pre><code class="javascript">var Promise = require(&#39;bluebird&#39;);
+<pre><code class="lang-javascript">var Promise = require(&#39;bluebird&#39;);
 
 var request = Promise.promisify(require(&#39;request&#39;));
 
@@ -173,7 +169,7 @@ var s = require(&quot;underscore.string&quot;);
 <p><strong>插入表格</strong></p>
 <p>Markdown插入表格的语法相对复杂，必须要按格式来敲，注意表头与内容的分割线横线-不能少于3个。</p>
 <p>第一格表头 | 第二格表头</p>
-<p>— | —</p>
+<p>—- | —-</p>
 <p>内容单元格 第一列第一格 | 内容单元格第二列第一格</p>
 <p>内容单元格 第一列第二格 多加文字 | 内容单元格第二列第二格</p>
 <p>效果如下：</p>
