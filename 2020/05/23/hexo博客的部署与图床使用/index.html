@@ -16,7 +16,7 @@
 
 
 
-    <link rel="icon" href="/favicon.ico">
+    <link rel="icon" href="/img.ico">
 
 
 
@@ -49,12 +49,10 @@
         <header>
     <nav class="navbar">
         <div class="container">
-            <div class="navbar-header header-logo"><a href="/">Bentham&#39;s Blog</a></div>
+            <div class="navbar-header header-logo"><a href="/">LiuChanglin&#39;s Blog</a></div>
             <div class="menu navbar-right">
                 
                     <a class="menu-item" href="/archives">Posts</a>
-                
-                    <a class="menu-item" href="/category">Categories</a>
                 
                     <a class="menu-item" href="/tag">Tags</a>
                 
@@ -71,15 +69,13 @@
         <div class="container">
             <div class="navbar-header">
                 <div>
-                    <a href="/">Bentham&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+                    <a href="/">LiuChanglin&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
                 </div>
                 <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
             </div>
             <div class="menu" id="mobile-menu">
                 
                     <a class="menu-item" href="/archives">Posts</a>
-                
-                    <a class="menu-item" href="/category">Categories</a>
                 
                     <a class="menu-item" href="/tag">Tags</a>
                 
@@ -205,27 +201,15 @@
 <p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20200523183841443.png" alt="image-20200523183841443" style="zoom:50%;" /></p>
 <p>仓库地址：<a href="https://github.com/MagicStarLIN/MagicStarLIN.github.io.git" target="_blank" rel="noopener">https://github.com/MagicStarLIN/MagicStarLIN.github.io.git</a></p>
 <h3 id="安装git插件"><a href="#安装git插件" class="headerlink" title="安装git插件"></a>安装git插件</h3><p>​    仓库新建完成之后，我们回到我们的hexo目录文件夹下，我们需要安装一个git deploy的插件，这里借助cnpm来完成安装，只需要一个命令。</p>
-<pre><code class="lang-java">$ cnpm install --save hexo-deployer-git
-</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ cnpm install --save hexo-deployer-git</span><br></pre></td></tr></table></figure>
 <h3 id="设置-config-yml"><a href="#设置-config-yml" class="headerlink" title="设置_config.yml"></a>设置_config.yml</h3><p>插件完成安装之后，我们需要对yml配置文件进行配置.</p>
 <p>配置主要会在_config.yml文件中的deploy一级属性下进行配置.这里我的github仓库地址为<code>https://github.com/MagicStarLIN/MagicStarLIN.github.io.git</code></p>
 <p>初始的_config.yml文件的deploy属性为：</p>
-<pre><code class="lang-yaml"># Deployment
-## Docs: https://hexo.io/docs/deployment.html
-deploy:
-  type: &#39;&#39;
-</code></pre>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Deployment</span></span><br><span class="line"><span class="comment">## Docs: https://hexo.io/docs/deployment.html</span></span><br><span class="line"><span class="attr">deploy:</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">''</span></span><br></pre></td></tr></table></figure>
 <p>基本处于什么都没有配置的状态，这里我直接展示我配置之后的yml文件：</p>
-<pre><code class="lang-yaml"># Deployment
-## Docs: https://hexo.io/docs/deployment.html
-deploy:
-  type: git
-  repo: https://github.com/MagicStarLIN/MagicStarLIN.github.io.git
-  branch: master
-</code></pre>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Deployment</span></span><br><span class="line"><span class="comment">## Docs: https://hexo.io/docs/deployment.html</span></span><br><span class="line"><span class="attr">deploy:</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">repo:</span> <span class="string">https://github.com/MagicStarLIN/MagicStarLIN.github.io.git</span></span><br><span class="line">  <span class="attr">branch:</span> <span class="string">master</span></span><br></pre></td></tr></table></figure>
 <h3 id="部署到远端"><a href="#部署到远端" class="headerlink" title="部署到远端"></a>部署到远端</h3><p>使用hexo的命令实现部署至GitHub pages</p>
-<pre><code class="lang-java">$ hexo d
-</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo d</span><br></pre></td></tr></table></figure>
 <p>如果之前没有配置过git账号和密码，那么这里第一次部署应该会要求输入GitHub的账号和密码.</p>
 <p>至此，成功之后，就已经完成了博客的部署.我们可以访问<code>&quot;GitHub昵称&quot;.github.io</code>url来直接访问自己的hexo博客.</p>
 <h2 id="二、配置博客图床"><a href="#二、配置博客图床" class="headerlink" title="二、配置博客图床"></a>二、配置博客图床</h2><p>​    我们在写博客的时候，经常需要插入一些图片(比如上面的GitHub仓库截图)，这个时候因为markdown语法的图片插入是基于url的链接访问的. 比如我使用的是<strong>Typora编辑器</strong>来写markdown文档，那么他的图片会自动存储到电脑的某个固定文件夹中，我们在本地查看的markdown文档中的图片，就是访问的电脑中保存的图片. 那么当我们部署到GitHub上的时候就不能查看到博文中的图片了，这里我们就需要借助搭建好的<strong>图床</strong>来进行图片的访问.</p>
@@ -279,21 +263,11 @@ deploy:
                     </p>
                 
                 
-                    <p class="copyright-item">
-                        <span>Permalink:</span>
-                        <span><a href="http://yoursite.com/2020/05/23/hexo%E5%8D%9A%E5%AE%A2%E7%9A%84%E9%83%A8%E7%BD%B2%E4%B8%8E%E5%9B%BE%E5%BA%8A%E4%BD%BF%E7%94%A8/">http://yoursite.com/2020/05/23/hexo%E5%8D%9A%E5%AE%A2%E7%9A%84%E9%83%A8%E7%BD%B2%E4%B8%8E%E5%9B%BE%E5%BA%8A%E4%BD%BF%E7%94%A8/</a></span>
-                    </p>
-                
-                
-                    <p class="copyright-item">
-                        <span>License:</span>
-                        <span>Copyright (c) 2019 <a href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC-BY-NC-4.0</a> LICENSE</span>
-                    </p>
                 
                 
                      <p class="copyright-item">
                          <span>Slogan:</span>
-                         <span>Do you believe in <strong>DESTINY</strong>?</span>
+                         <span><strong>世间万事曾经历，此心未与年俱老。</strong></span>
                      </p>
                 
 
