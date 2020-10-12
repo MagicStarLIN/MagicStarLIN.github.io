@@ -389,7 +389,7 @@ m^e \equiv c \pmod n \\ 即 \\ 65^{17} \equiv c \pmod {3233}</script><figure cla
 <p><strong>解密过程</strong></p>
 <p>​    解密过程需要使用私钥(n, d)，对方发来的加密信息是c = 2790，那么我们可以计算这样的一个算式：</p>
 <script type="math/tex; mode=display">
-c^d \equiv m \pmod n \\即\\ 2790 ^{2793} \equiv m \pmod {3233}</script><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pow(<span class="number">2790</span>,<span class="number">2753</span>) % <span class="number">3233</span></span><br></pre></td></tr></table></figure>
+c^d \equiv m \pmod n \\即\\ 2790 ^{2753} \equiv m \pmod {3233}</script><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pow(<span class="number">2790</span>,<span class="number">2753</span>) % <span class="number">3233</span></span><br></pre></td></tr></table></figure>
 <p>​    通过计算得出，m = 65</p>
 <p>​    至此，整个“加密-解密”过程全部完成。</p>
 <h3 id="解密过程的证明"><a href="#解密过程的证明" class="headerlink" title="#解密过程的证明"></a>#解密过程的证明</h3><p>​    我们这里证明一下，为什么使用私钥解密可以正确的求得m。也就是证明下面的这个公式。</p>
