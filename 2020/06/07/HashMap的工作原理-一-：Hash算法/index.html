@@ -202,7 +202,7 @@
 </li>
 <li><p>输入数据的微小变化会得到<strong>完全不同</strong>的Hash值，相同的数据会得到相同的值</p>
 <p>这里也可以说Hash算法的<strong>抗篡改能力：对于一个数据块，哪怕只修改一个比特位，其Hash值的改动也会非常大. </strong></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">String s = <span class="string">"Hash算法"</span>;</span><br><span class="line">System.err.println(md5(s));</span><br><span class="line"><span class="comment">// 输出结果：f1ab62697296f0b575b9229dba7ea1ba</span></span><br><span class="line">String s = <span class="string">"Hesh算法"</span>;</span><br><span class="line">System.err.println(md5(s));</span><br><span class="line"><span class="comment">// 输出结果：d789d51b7005d2d55c23bbfc4367d97d</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">String s = <span class="string">"Hash算法"</span>;</span><br><span class="line">System.err.println(md5(s));</span><br><span class="line"><span class="comment">// 输出结果：f1ab62697296f0b575b9229dba7ea1ba</span></span><br><span class="line">String s = <span class="string">"Hash算法"</span>;</span><br><span class="line">System.err.println(md5(s));</span><br><span class="line"><span class="comment">// 输出结果：d789d51b7005d2d55c23bbfc4367d97d</span></span><br></pre></td></tr></table></figure>
 <p>通过这个实例我们可以看到，只是改变了一个字符，却能导致两个hash值几乎每一位都不同.</p>
 </li>
 <li><p>Hash算法的冲突概率要小</p>
@@ -286,9 +286,9 @@
                     
                         <a href="/tags/Java/"># Java</a>
                     
-                        <a href="/tags/Algorithm/"># Algorithm</a>
-                    
                         <a href="/tags/DataStructure/"># DataStructure</a>
+                    
+                        <a href="/tags/Algorithm/"># Algorithm</a>
                     
                         <a href="/tags/HashMap/"># HashMap</a>
                     
