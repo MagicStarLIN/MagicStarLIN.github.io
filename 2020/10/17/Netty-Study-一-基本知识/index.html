@@ -189,7 +189,16 @@
         <div class="post-content">
             <h2 id="零、写在前面"><a href="#零、写在前面" class="headerlink" title="零、写在前面"></a>零、写在前面</h2><p>​    七月份入职之后到现在已经三个多月了，我也顺利转正了，这几个月也在公司学习了很多东西，每周的技术分享都有让我想学的知识出现，之后有把所有想学的东西写在笔记里（真他妈多😅）。面对这么多的知识一度十分焦虑，不知道从何学起，不过仔细想想，这些东西能在两三年内学到我理想的程度已经很不错了。</p>
 <p>​    Netty相关已经看了很久了，七月底的时候就开始看《Netty实战》，但是公司越来越忙，导致书看了忘，忘了再看，一直停留在原地没有进展，这次准备把之前看的书总结一下，省的再回去看忘掉的知识，同时也要尽快把Netty学习提上日程。这也是为了后续手写RPC框架的计划作准备。</p>
-<h2 id="一、BIO、NIO、AIO"><a href="#一、BIO、NIO、AIO" class="headerlink" title="一、BIO、NIO、AIO"></a>一、BIO、NIO、AIO</h2><h3 id="1-BIO（Blocking-I-O）"><a href="#1-BIO（Blocking-I-O）" class="headerlink" title="#1 BIO（Blocking I/O）"></a>#1 BIO（Blocking I/O）</h3><p>​    早期的网络编程开发人员，需要花费大量的时间去学习复杂的C语言套接字(Socket)库，但是会经常在不同的操作系统上出现奇怪的问题。早期的Java提供了java.net包下的API，支持使用由本地系统套接字库提供的阻塞函数。也就是BIO。</p>
+<h2 id="一、常见IO线程模型"><a href="#一、常见IO线程模型" class="headerlink" title="一、常见IO线程模型"></a>一、常见IO线程模型</h2><p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/77752ed5.jpg" alt="emma_1"></p>
+<p>​    任何一个IO过程中，都包含两个步骤：第一个是等待，第二是拷贝。而在实际应用的场景中，等待消耗的时间远远高于拷贝的时间；举例来说，<code>读函数</code>，分为等待系统可读和真正的读；同理，写函数分为等待网卡可以写和真正的写。需要说明的是等待就绪的阻塞时不使用CPU资源的，是在“空等”；而真正的读写操作的阻塞是使用CPU的，这个过程很快，甚至可以理解成基本不耗时。</p>
+<p>​    <strong>为了让IO更加高效，最核心的方法就是让等待的时间尽可能的变少。</strong></p>
+<h3 id="1-阻塞IO"><a href="#1-阻塞IO" class="headerlink" title="#1 阻塞IO"></a>#1 阻塞IO</h3><p>​    在内核将数据准备好之前，系统调用会一直等待。所有的套接字（socke），默认都是阻塞方式，<strong>阻塞式是最常见的IO模型，属于同步IO模型。</strong></p>
+<p>​    例子：A拿着一支鱼竿在河边钓鱼，并且一直在鱼竿前等，在等的时候不做其他的事情，十分专心。只有鱼上钩的时，才结束掉等的动作，把鱼钓上来。</p>
+<p>​    <img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/v2-7ee1abb79d9c79b1378c3ede0528bfa4_r.jpg" alt="preview"></p>
+<h3 id="2-非阻塞IO"><a href="#2-非阻塞IO" class="headerlink" title="#2 非阻塞IO"></a>#2 非阻塞IO</h3><p>​    如果内核没有将数据准备好，系统的调用仍然会直接返回，并且返回EWOULDBLOCK错误码，非阻塞IO往往需要程序员循环的方式反复尝试读写文件描述符，这个过程被称为论询。这对CPU来说是比较大的浪费，<strong>非阻塞IO也属于同步IO模型。</strong></p>
+<p>​    例子： B也在河边钓鱼，但是B不想将自己的所有时间都花费在钓鱼上，在等鱼上钩这个时间段中，B在做其他的事情（刷牛客或者刷知乎），但B在做这些事情的时候，每隔一个固定的时间检查鱼是否上钩。一旦检查到有鱼上钩，就停下手中的事情，把鱼钓上来。</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/v2-7f84267dc58c969fedd5606c76bd5905_r.jpg" alt="preview"></p>
+<h2 id="二、BIO、NIO、AIO"><a href="#二、BIO、NIO、AIO" class="headerlink" title="二、BIO、NIO、AIO"></a>二、BIO、NIO、AIO</h2><h3 id="1-BIO（Blocking-I-O）"><a href="#1-BIO（Blocking-I-O）" class="headerlink" title="#1 BIO（Blocking I/O）"></a>#1 BIO（Blocking I/O）</h3><p>​    早期的网络编程开发人员，需要花费大量的时间去学习复杂的C语言套接字(Socket)库，但是会经常在不同的操作系统上出现奇怪的问题。早期的Java提供了java.net包下的API，支持使用由本地系统套接字库提供的阻塞函数。也就是BIO。</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//创建一个新的ServerSocket，用来监听指定端口上的连接请求</span></span><br><span class="line">ServerSocket serverSocket = <span class="keyword">new</span> ServerSocket(portNumber);</span><br><span class="line"><span class="comment">//对accept方法的调用将会被一直阻塞，直到一个链接的建立</span></span><br><span class="line">Socket clientSocket = serverSocket.accept(); </span><br><span class="line"><span class="comment">//</span></span><br><span class="line">BufferedReader in = <span class="keyword">new</span> BufferedReader(</span><br><span class="line">  <span class="keyword">new</span> InputStreamReader(clientSocket.getInputStream()));</span><br><span class="line">PrintWriter out = <span class="keyword">new</span> PrintWriter(clientSocket.getOutputStream(), <span class="keyword">true</span>); </span><br><span class="line">String request, response;</span><br><span class="line"><span class="keyword">while</span> ((request = in.readLine()) != <span class="keyword">null</span>) &#123;</span><br><span class="line">  <span class="comment">//如果客户端发送了‘Done’ 推出循环</span></span><br><span class="line">	<span class="keyword">if</span> (<span class="string">"Done"</span>.equals(request)) &#123;</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  &#125; </span><br><span class="line">  <span class="comment">//把客户端请求发送给服务器的handler方法</span></span><br><span class="line">  response = processRequest(request);</span><br><span class="line">	out.println(response); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>​    采用BIO通信模型的服务端，通常会有一个独立的Acceptor线程负责监听客户端的链接。在while（true）循环中服务端会调用accept()方法等待接受客户端的链接方式监听请求，请求一旦接受到一个链接请求，就可以建立通信套接字在这个通信套接字上进行读写操作，此时不能再接受其他客户端的链接请求，只能等待当前链接的客户端的操作执行完成，也就是说这段代码只能同时处理一个连接，不过可以<strong>通过多线程</strong>来支持多个客户端的链接。 </p>
 <p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20201018154929638.png" alt="image-20201018154929638"></p>
@@ -204,7 +213,7 @@
 <p>​    图中的这种非阻塞设计，消除了上边BIO的那些弊端，Selector是Java的NIO实现的关键。检查一个或者多个NIO Channel（通道）的状态是否处于可读、可写。它使用事件通知API以确定在一组非阻塞套接字中那些已经就绪可以进行IO相关的操作。</p>
 <h3 id="3-AIO（Asynchronous-IO）"><a href="#3-AIO（Asynchronous-IO）" class="headerlink" title="#3 AIO（Asynchronous IO）"></a>#3 AIO（Asynchronous IO）</h3><p>​    AIO 也就是 NIO 2。在 Java 7 中引入了 NIO 的改进版 NIO 2,它是<strong>异步非阻塞的IO模型</strong>。异步 IO 是基于<strong>事件和回调机制</strong>实现的，也就是应用操作之后会直接返回，不会堵塞在那里，当后台处理完成，操作系统会通知相应的线程进行后续的操作。</p>
 <p>​    AIO 是异步IO的缩写，虽然 NIO 在网络操作中，提供了非阻塞的方法，但是 NIO 的 IO 行为还是同步的。对于 NIO 来说，我们的业务线程是在 IO 操作准备好时，得到通知，接着就由这个线程自行进行 IO 操作，IO操作本身是同步的。（除了 AIO 其他的 IO 类型都是同步的，这一点可以从底层IO线程模型解释。</p>
-<h2 id="二、Netty"><a href="#二、Netty" class="headerlink" title="二、Netty"></a>二、Netty</h2><blockquote>
+<h2 id="三、Netty"><a href="#三、Netty" class="headerlink" title="三、Netty"></a>三、Netty</h2><blockquote>
 <p>​    我们已经从漫长的痛苦经历中学到:直接使用底层的API暴露了复杂性，并且引入了对往往供不应求的技能的关键性依赖 。这也就是，面向对象的基本概念:</p>
 <p>​    <strong>用较简单的抽象隐藏底层实现的复杂性。</strong></p>
 <p>​     <strong>Hide complexity behind abstractions.</strong></p>
@@ -292,7 +301,7 @@
         </section>
         <section class="post-nav">
             
-                <a class="prev" rel="prev" href="/2020/10/25/Netty-Study-%E4%BA%8C-Netty%E7%BB%84%E4%BB%B6%E5%92%8C%E5%85%A5%E9%97%A8%E5%AE%9E%E4%BE%8B/">Netty Study(二):Netty组件和入门实例</a>
+                <a class="prev" rel="prev" href="/2020/12/17/Netty-Study-%E4%BA%8C-Netty%E7%BB%84%E4%BB%B6%E5%92%8C%E5%85%A5%E9%97%A8%E5%AE%9E%E4%BE%8B/">Netty Study(二):Netty组件和入门实例</a>
             
             
             <a class="next" rel="next" href="/2020/10/04/%E9%9D%9E%E5%AF%B9%E7%A7%B0%E5%8A%A0%E5%AF%86%E2%80%94%E2%80%94RSA%E7%AE%97%E6%B3%95/">非对称加密——RSA算法</a>
