@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="liuchanglin">
+
+
+
+
+
+<title>RateLimiter Guava限流工具类 | liuchanglin &#39;s blog</title>
+
+
+
+    <link rel="icon" href="/img.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+<body>
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">LiuChanglin&#39;s Blog</a></div>
+            <div class="menu navbar-right">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+                <input id="switch_default" type="checkbox" class="switch_default">
+                <label for="switch_default" class="toggleBtn"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">LiuChanglin&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if(toggleMenu.classList.contains("active")){
+           toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        }else{
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+        <div class="main">
+            <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    document.ready(
+        function () {
+            tocbot.init({
+                tocSelector: '.tocbot-list',
+                contentSelector: '.post-content',
+                headingSelector: 'h1, h2, h3, h4, h5',
+                collapseDepth: 1,
+                orderedList: false,
+                scrollSmooth: true,
+            })
+        }
+    )
+
+    function expand_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 6,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "collapse_toc()");
+        b.innerHTML = "Collapse all"
+    }
+
+    function collapse_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 1,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "expand_toc()");
+        b.innerHTML = "Expand all"
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">RateLimiter Guava限流工具类</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">liuchanglin</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">October 24, 2021&nbsp;&nbsp;18:25:37</a>
+                        </span>
+                    
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <h2 id="一、限流"><a href="#一、限流" class="headerlink" title="一、限流"></a>一、限流</h2><p>​    限流是保护高并发系统的三把利器之一，另外两个是缓存和降级。限流在很多场景中用来限制并发和请求量，比如说秒杀抢购，保护自身系统和下游系统不被巨型流量冲垮等。<strong>服务降级、熔断本身也是限流的一种</strong></p>
+<p>​    限流的目的是通过对并发访问/请求进行限速或者一个时间窗口内的的请求进行限速来保护系统，一旦达到限制速率则可以拒绝服务或进行流量整形。</p>
+<p>​    常用的限流方式和场景有：限制总并发数（比如数据库连接池、线程池）、限制瞬时并发数（如nginx的limit<em>conn模块，用来限制瞬时并发连接数，Java的Semaphore也可以实现）、限制时间窗口内的平均速率（如Guava的RateLimiter、nginx的limit</em>req模块，限制每秒的平均速率）；其他还有如限制远程接口调用速率、限制MQ的消费速率。另外还可以根据网络连接数、网络流量、CPU或内存负载等来限流。</p>
+<h2 id="二、限流基础算法"><a href="#二、限流基础算法" class="headerlink" title="二、限流基础算法"></a>二、限流基础算法</h2><p>​    限流基础算法有两种：令牌桶算法、漏桶算法</p>
+<h3 id="1-漏桶算法"><a href="#1-漏桶算法" class="headerlink" title="1)漏桶算法"></a>1)漏桶算法</h3><p>​    <img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/801753-20190824212037987-415810352.png" alt="img"></p>
+<p>​    漏桶算法可以强制的<strong>限制数据的传输速率</strong>。漏桶算法原理为将请求先进入到一个漏桶里，然后人为设置一个最大的出水速率，保证漏桶的出水速率小于等于设置过的出水速率，当水流过大的时候就会直接溢出，也就是采取拒绝策略。漏桶算法的实现往往依赖于<strong>队列</strong>，请求到达如果队列未满则直接放入队列，然后有一个处理器按照固定频率从队列头取出请求进行处理。如果请求量大，则会导致队列满，那么新来的请求就会被抛弃。</p>
+<p>​    算法的大致流程就是：</p>
+<ul>
+<li>存下请求</li>
+<li>匀速处理</li>
+<li><p>多余丢弃</p>
+<p>   漏桶算法的缺点十分明显，因为漏桶算法是一种强制限制请求速率的方式，所以它无法处理<strong>突发的大流量</strong>，网络请求中突然激增的流量是十分常见的，而漏桶算法的策略可能是直接将请求丢弃，这是十分不合理的。</p>
+</li>
+</ul>
+<h3 id="2-令牌桶算法"><a href="#2-令牌桶算法" class="headerlink" title="2)令牌桶算法"></a>2)令牌桶算法</h3><p>​    令牌桶算法是网络流量整形（Traffic Shaping）和限流（Rate Limiting）中最常使用的一种算法，它可用于控制发送到网络上数据的数量并允许突发数据的发送。</p>
+<p>​    令牌桶算法是对漏桶算法的一种改进；</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/081226107372877.png" alt="img"></p>
+<p>​    令牌桶的处理过程大概是：</p>
+<ul>
+<li>系统固定速率产生令牌，然后将令牌放入令牌桶中</li>
+<li>令牌桶有固定容量，令牌桶满了，再产生的令牌就会被丢弃</li>
+<li>每次发生请求，都会从令牌桶中获取一个令牌，如果取到，请求通过；如果没取到，那么就拒绝请求</li>
+</ul>
+<p>​    令牌桶算法可以在一定程度上防止突发流量(<strong>平滑流出速率</strong>)。假设我们想要的速率是1000QPS，那么往桶中放令牌的速度就是1000个/s，假设第1秒只有800个请求，那意味着第2秒可以容许1200个请求，这就是<strong>一定程度</strong>突发流量的意思，反之我们看漏桶算法，第一秒只有800个请求，那么全部放过，第二秒这1200个请求将会被打回200个。（是在设置桶中令牌上限满足的情况下）</p>
+<h2 id="三、RateLimiter"><a href="#三、RateLimiter" class="headerlink" title="三、RateLimiter"></a>三、RateLimiter</h2><p>一段代码示例，令牌桶中放置5个令牌，模拟每秒最多5个请求：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> liuchanglin</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@version</span> 1.0</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@ClassName</span>: LimiterTest</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@date</span> 2021/10/25 1:11 上午</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LimiterTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> SimpleDateFormat FORMATTER = <span class="keyword">new</span> SimpleDateFormat(<span class="string">"yyyy-MM-dd HH:mm:ss"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> THREAD_COUNT = <span class="number">25</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">testRateLimiter</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        RateLimiter rateLimiter = RateLimiter.create(<span class="number">5</span>);</span><br><span class="line"></span><br><span class="line">        Thread[] ts = <span class="keyword">new</span> Thread[THREAD_COUNT];</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; THREAD_COUNT; i++) &#123;</span><br><span class="line">            ts[i] = <span class="keyword">new</span> Thread(<span class="keyword">new</span> RateLimiterThread(rateLimiter), <span class="string">"RateLimiterThread-"</span> + i);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; THREAD_COUNT; i++) &#123;</span><br><span class="line">            ts[i].start();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">RateLimiterThread</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">final</span> RateLimiter rateLimiter;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="title">RateLimiterThread</span><span class="params">(RateLimiter rateLimiter)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">this</span>.rateLimiter = rateLimiter;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            rateLimiter.acquire(<span class="number">1</span>);</span><br><span class="line">            System.out.println(Thread.currentThread().getName() + <span class="string">"获取到了令牌，时间 = "</span> + FORMATTER.format(<span class="keyword">new</span> Date()));</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        testRateLimiter();</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>代码运行结果：</p>
+<blockquote>
+<p>RateLimiterThread-0获取到了令牌，时间 = 2021-10-25 01:23:23<br>RateLimiterThread-15获取到了令牌，时间 = 2021-10-25 01:23:23<br>RateLimiterThread-16获取到了令牌，时间 = 2021-10-25 01:23:23<br>RateLimiterThread-14获取到了令牌，时间 = 2021-10-25 01:23:23<br>RateLimiterThread-13获取到了令牌，时间 = 2021-10-25 01:23:24<br>RateLimiterThread-12获取到了令牌，时间 = 2021-10-25 01:23:24<br>RateLimiterThread-11获取到了令牌，时间 = 2021-10-25 01:23:24<br>RateLimiterThread-17获取到了令牌，时间 = 2021-10-25 01:23:24<br>RateLimiterThread-18获取到了令牌，时间 = 2021-10-25 01:23:24<br>RateLimiterThread-10获取到了令牌，时间 = 2021-10-25 01:23:25<br>RateLimiterThread-9获取到了令牌，时间 = 2021-10-25 01:23:25<br>RateLimiterThread-8获取到了令牌，时间 = 2021-10-25 01:23:25<br>RateLimiterThread-7获取到了令牌，时间 = 2021-10-25 01:23:25<br>RateLimiterThread-6获取到了令牌，时间 = 2021-10-25 01:23:25<br>RateLimiterThread-5获取到了令牌，时间 = 2021-10-25 01:23:26<br>RateLimiterThread-4获取到了令牌，时间 = 2021-10-25 01:23:26<br>RateLimiterThread-3获取到了令牌，时间 = 2021-10-25 01:23:26<br>RateLimiterThread-19获取到了令牌，时间 = 2021-10-25 01:23:26<br>RateLimiterThread-2获取到了令牌，时间 = 2021-10-25 01:23:26<br>RateLimiterThread-1获取到了令牌，时间 = 2021-10-25 01:23:27<br>RateLimiterThread-20获取到了令牌，时间 = 2021-10-25 01:23:27<br>RateLimiterThread-21获取到了令牌，时间 = 2021-10-25 01:23:27<br>RateLimiterThread-22获取到了令牌，时间 = 2021-10-25 01:23:27<br>RateLimiterThread-23获取到了令牌，时间 = 2021-10-25 01:23:27<br>RateLimiterThread-24获取到了令牌，时间 = 2021-10-25 01:23:28</p>
+</blockquote>
+<p>可以看到，每秒只有5个线程可以取到令牌。</p>
+<ul>
+<li>acquire会阻塞线程直到线程获取到令牌，返回值是一个double类型，表示从开始阻塞到获取到令牌的时间，单位为秒；</li>
+<li>tryAquire可以指定超时时间，返回值为boolean类型；</li>
+</ul>
+<h3 id="RateLimiter-预消费"><a href="#RateLimiter-预消费" class="headerlink" title="RateLimiter 预消费"></a>RateLimiter 预消费</h3><p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20211025021453432.png" alt="image-20211025021453432"></p>
+<p>acquire方法有一个参数为permits的重载方法，它可以允许一次指定多个令牌数  </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">testRateLimiterPermits</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    RateLimiter rateLimiter = RateLimiter.create(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">    System.out.println(<span class="string">"获取1个令牌开始，时间为"</span> + FORMATTER.format(<span class="keyword">new</span> Date()));</span><br><span class="line">    <span class="keyword">double</span> cost = rateLimiter.acquire(<span class="number">1</span>);</span><br><span class="line">    System.out.println(<span class="string">"获取1个令牌结束，时间为"</span> + FORMATTER.format(<span class="keyword">new</span> Date()) + <span class="string">", 耗时"</span> + cost + <span class="string">"ms"</span>);</span><br><span class="line">    System.out.println(<span class="string">"获取5个令牌开始，时间为"</span> + FORMATTER.format(<span class="keyword">new</span> Date()));</span><br><span class="line">    cost = rateLimiter.acquire(<span class="number">5</span>);</span><br><span class="line">    System.out.println(<span class="string">"获取5个令牌结束，时间为"</span> + FORMATTER.format(<span class="keyword">new</span> Date()) + <span class="string">", 耗时"</span> + cost + <span class="string">"ms"</span>);</span><br><span class="line">    System.out.println(<span class="string">"获取3个令牌开始，时间为"</span> + FORMATTER.format(<span class="keyword">new</span> Date()));</span><br><span class="line">    cost = rateLimiter.acquire(<span class="number">3</span>);</span><br><span class="line">    System.out.println(<span class="string">"获取3个令牌结束，时间为"</span> + FORMATTER.format(<span class="keyword">new</span> Date()) + <span class="string">", 耗时"</span> + cost + <span class="string">"ms"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>代码输出结果👇🏻</p>
+<blockquote>
+<p>获取1个令牌开始，时间为2021-10-25 02:16:57<br>获取1个令牌结束，时间为2021-10-25 02:16:57, 耗时0.0ms<br>获取5个令牌开始，时间为2021-10-25 02:16:57<br>获取5个令牌结束，时间为2021-10-25 02:16:58, 耗时0.996506ms<br>获取3个令牌开始，时间为2021-10-25 02:16:58<br>获取3个令牌结束，时间为2021-10-25 02:17:03, 耗时4.994537ms</p>
+</blockquote>
+<p>从结果上看，如果请求的数量大于防止令牌的数量，那么这是可以允许处理的，但是影响就是后续的请求就要延后处理。</p>
+<h3 id="RateLimiter的限制"><a href="#RateLimiter的限制" class="headerlink" title="RateLimiter的限制"></a>RateLimiter的限制</h3><p>RateLimiter 是单机的如果需要对集群进行限流，就需要借助于Redis、sentinel等来实现；</p>
+<h2 id="四、源码"><a href="#四、源码" class="headerlink" title="四、源码"></a>四、源码</h2><p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20211025023935179.png" alt="image-20211025023935179"></p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>liuchanglin</span>
+                    </p>
+                
+                
+                
+                
+                     <p class="copyright-item">
+                         <span>Slogan:</span>
+                         <span><strong>我惭携宝剑，只为看山来.</strong></span>
+                     </p>
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tags/Algorithm/"># Algorithm</a>
+                    
+                        <a href="/tags/Java/"># Java</a>
+                    
+                        <a href="/tags/Guava/"># Guava</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+            
+            <a class="next" rel="next" href="/2021/04/03/%E4%BB%8ECPU-cache%E4%B8%8E%E7%BC%93%E5%AD%98%E8%A1%8C%E5%88%B0%E9%AB%98%E6%80%A7%E8%83%BD%E9%98%9F%E5%88%97Disruptor/">从CPU cache与缓存行到高性能队列Disruptor</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+        </div>
+        <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© liuchanglin | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+</html>
