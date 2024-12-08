@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="liuchanglin">
+
+
+
+
+
+<title>从CPU cache与缓存行到高性能队列Disruptor | liuchanglin &#39;s blog</title>
+
+
+
+    <link rel="icon" href="/img.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+
+
+
+    
+    
+        
+            <!-- MathJax配置，可通过单美元符号书写行内公式等 -->
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+    "HTML-CSS": {
+        preferredFont: "TeX",
+        availableFonts: ["STIX","TeX"],
+        linebreaks: { automatic:true },
+        EqnChunk: (MathJax.Hub.Browser.isMobile ? 10 : 50)
+    },
+    tex2jax: {
+        inlineMath: [ ["$", "$"], ["\\(","\\)"] ],
+        processEscapes: true,
+        ignoreClass: "tex2jax_ignore|dno",
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    },
+    TeX: {
+        equationNumbers: { autoNumber: "AMS" },
+        noUndefined: { attributes: { mathcolor: "red", mathbackground: "#FFEEEE", mathsize: "90%" } },
+        Macros: { href: "{}" }
+    },
+    messageStyle: "none"
+    });
+</script>
+<!-- 给MathJax元素添加has-jax class -->
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+<!-- 通过连接CDN加载MathJax的js代码 -->
+<script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+
+        
+    
+
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+<body>
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">LiuChanglin&#39;s Blog</a></div>
+            <div class="menu navbar-right">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+                <input id="switch_default" type="checkbox" class="switch_default">
+                <label for="switch_default" class="toggleBtn"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">LiuChanglin&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if(toggleMenu.classList.contains("active")){
+           toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        }else{
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+        <div class="main">
+            <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    document.ready(
+        function () {
+            tocbot.init({
+                tocSelector: '.tocbot-list',
+                contentSelector: '.post-content',
+                headingSelector: 'h1, h2, h3, h4, h5',
+                collapseDepth: 1,
+                orderedList: false,
+                scrollSmooth: true,
+            })
+        }
+    )
+
+    function expand_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 6,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "collapse_toc()");
+        b.innerHTML = "Collapse all"
+    }
+
+    function collapse_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 1,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "expand_toc()");
+        b.innerHTML = "Expand all"
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">从CPU cache与缓存行到高性能队列Disruptor</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">liuchanglin</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">April 3, 2021&nbsp;&nbsp;0:32:11</a>
+                        </span>
+                    
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <h2 id="一、关于CPU"><a href="#一、关于CPU" class="headerlink" title="一、关于CPU"></a>一、关于CPU</h2><p>​    CPU由三部分组成:</p>
+<ul>
+<li><strong>算术/逻辑单元(arithmetic/logic unit)</strong>:它包含在数据上执行运算(如加法和减法)的电路;</li>
+<li><strong>控制单元(control unit)</strong>:它包含协调机器活动的电路;</li>
+<li><strong>寄存器单元(register unit)</strong>:他包含称为寄存器(register)的数据存储单元(与主存单元相似),用作CPU内部的信息临时存储.</li>
+</ul>
+<p>寄存器单元中的一些寄存器被看成是<strong>通用寄存器(general-purpose register)</strong>,而其他的一些则被看成是<strong>专用寄存器(special-purpose register)</strong>.这里先关注通用寄存器.</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20210405003309699.png" alt="image-20210405003309699" style="zoom:50%;" /></p>
+<p>​    基于这样的设计,将存储在主存储器上的两个值相加的任务不仅仅涉及到加法运算,数据必须先从主存储器传输到CPU到寄存器中,相加后再把结果放在主存储器单元中.</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20210405005759994.png" alt="image-20210405005759994" style="zoom:50%;" /></p>
+<p>​    <strong>存储程序概念(stored-program concept)</strong>，这个概念即将计算机程序存储到主存储器中，每次处理任务，只需要访问存储器中的计算机程序进行处理即可，而不需要对CPU进行重新布线。</p>
+<p>CPU中有两个专用寄存器:</p>
+<ul>
+<li><strong>指令寄存器(instruction register)</strong>     :用来存储正在执行的指令</li>
+<li><strong>程序计数器(program counter)</strong>     :用来存储下一个等待执行的指令的地址.用于追踪程序执行到了什么地方.</li>
+</ul>
+<p>CPU通过不断重复一个算法来完成他的任务,这个算法引导CPU完成一个叫<strong>机器周期(machine cycle)</strong>的三步处理.</p>
+<p>描述CPU计算能力的时钟频率<strong>以赫兹为单位</strong>,1Hz<strong>相当于每秒一个周期</strong>.</p>
+<h2 id="二、CPU-Cache"><a href="#二、CPU-Cache" class="headerlink" title="二、CPU Cache"></a>二、CPU Cache</h2><blockquote>
+<p>​    在<a href="https://zh.wikipedia.org/wiki/计算机" target="_blank" rel="noopener">计算机</a>系统中，<strong>CPU高速缓存</strong>（英语：CPU Cache）是用于减少<a href="https://zh.wikipedia.org/wiki/中央处理器" target="_blank" rel="noopener">处理器</a>访问内存所需平均时间的部件。在金字塔式<a href="https://zh.wikipedia.org/w/index.php?title=存储体系&amp;action=edit&amp;redlink=1" target="_blank" rel="noopener">存储体系</a>中它位于自顶向下的第二层，仅次于<a href="https://zh.wikipedia.org/wiki/寄存器" target="_blank" rel="noopener">CPU寄存器</a>。其容量远小于<a href="https://zh.wikipedia.org/wiki/内存" target="_blank" rel="noopener">内存</a>，但速度却可以接近处理器的频率。</p>
+<p>​    当处理器发出内存访问请求时，会先查看缓存内是否有请求数据。如果存在（命中），则不经访问内存直接返回该数据；如果不存在（失效），则要先把内存中的相应数据载入缓存，再将其返回处理器。</p>
+<p>​    缓存之所以有效，主要是因为程序运行时对内存的访问呈现<strong>局部性（Locality）</strong>特征。这种局部性既包括空间局部性（Spatial Locality），也包括时间局部性（Temporal Locality）。有效利用这种局部性，缓存可以达到极高的命中率。</p>
+<p>​    在处理器看来，缓存是一个透明部件。因此，程序员通常无法直接干预对缓存的操作。但是，确实可以根据缓存的特点对程序代码实施特定优化，从而更好地利用缓存。</p>
+<p>​                                                                                                                                                                    —维基百科</p>
+</blockquote>
+<h3 id="1-为什么要有CPU-Cache"><a href="#1-为什么要有CPU-Cache" class="headerlink" title="#1 为什么要有CPU Cache"></a>#1 为什么要有CPU Cache</h3><p>​    随着工艺的提升最近几十年CPU的频率不断提升，而受制于制造工艺和成本限制，目前计算机的内存主要是DRAM并且在访问速度上没有质的突破。因此，<strong>CPU的处理速度和内存的访问速度差距越来越大，甚至可以达到上万倍</strong>。这种情况下传统的CPU通过FSB直连内存的方式显然就会因为内存访问的等待，导致计算资源大量闲置，降低CPU整体吞吐量。同时又由于内存数据访问的热点集中性，在CPU和内存之间用较为快速而成本较高的SDRAM做一层缓存，就显得性价比极高了。</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/10538467-7923f58c663c7db1.png" alt="img"  /></p>
+<h3 id="2-为什么要有多级CPU-Cache"><a href="#2-为什么要有多级CPU-Cache" class="headerlink" title="#2 为什么要有多级CPU Cache"></a>#2 为什么要有多级CPU Cache</h3><blockquote>
+<p>多级cpu缓存速度对比；</p>
+<ol>
+<li>各种寄存器，用来存储本地变量和函数参数，访问一次需要 1cycle，耗时小于 1ns；</li>
+<li>L1 Cache，一级缓存，本地 core 的缓存，分成 32K 的数据缓存 L1d 和 32k 指令缓存 L1i，访问 L1 需要 3cycles，耗时大约 1ns；</li>
+<li>L2 Cache，二级缓存，本地 core 的缓存，被设计为 L1 缓存与共享的 L3 缓存之间的缓冲，大小为 256K，访问 L2 需要 12cycles，耗时大约 3ns；</li>
+<li>L3 Cache，三级缓存，在同插槽的所有 core 共享 L3 缓存，分为多个 2M 的段，访问 L3 需要 38cycles，耗时大约 12ns；</li>
+</ol>
+</blockquote>
+<p>缓存层级越接近于 CPU core，容量越小，速度越快，同时，其造价也更贵。所以为了支撑更多的热点数据，同时追求最高的性价比，多级缓存架构应运而生。</p>
+<h3 id="3-cache-line-缓存行"><a href="#3-cache-line-缓存行" class="headerlink" title="#3 cache line 缓存行"></a>#3 cache line 缓存行</h3><p>CPU Cache 是由多个Cache Line缓存行组成的，Cache Line可以简单的理解为CPU Cache中的最小缓存单位。目前主流的CPU Cache的Cache Line大小都是64Bytes。假设我们有一个512字节的一级缓存，那么按照64B的缓存单位大小来算，这个一级缓存所能存放的缓存个数就是<code>512/64 = 8</code>个。</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/多级缓存.png" alt="img"></p>
+<h3 id="4-CPU-访问缓存、内存"><a href="#4-CPU-访问缓存、内存" class="headerlink" title="#4 CPU 访问缓存、内存"></a>#4 CPU 访问缓存、内存</h3><p>​    试想一下你正在遍历一个长度为 16 的 long 数组 data[16]，原始数据自然存在于主内存中，访问过程描述如下</p>
+<ol>
+<li>访问 data[0]，CPU core 尝试访问 CPU Cache，未命中。</li>
+<li>尝试访问主内存，操作系统一次访问的单位是一个 Cache Line 的大小 — 64 字节，这意味着：既从主内存中获取到了 data[0] 的值，同时将 data[0] ~ data[7] 加入到了 CPU Cache 之中，for free~</li>
+<li>访问 data[1]~data[7]，CPU core 尝试访问 CPU Cache，命中直接返回。</li>
+<li>访问 data[8]，CPU core 尝试访问 CPU Cache，未命中。</li>
+<li>尝试访问主内存。重复步骤 2</li>
+</ol>
+<p>当CPU执行运算的时候，它先去L1查找所需的数据、再去L2、然后是L3，如果最后这些缓存中都没有，所需的数据就要去主内存拿。走得越远，运算耗费的时间就越长。所以如果你在做一些很频繁的事，你要尽量确保数据在L1缓存中。</p>
+<p>另外，线程之间共享一份数据的时候，需要一个线程把数据写回主存，而另一个线程访问主存中相应的数据。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line">        arr = <span class="keyword">new</span> <span class="keyword">long</span>[<span class="number">1024</span> * <span class="number">1024</span>][<span class="number">8</span>];</span><br><span class="line">        <span class="comment">// 横向遍历</span></span><br><span class="line">        <span class="keyword">long</span> marked = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">1024</span> * <span class="number">1024</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">8</span>; j++) &#123;</span><br><span class="line">                sum += arr[i][j];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(<span class="string">"Loop times:"</span> + (System.currentTimeMillis() - marked) + <span class="string">"ms"</span>);</span><br><span class="line"></span><br><span class="line">        marked = System.currentTimeMillis();</span><br><span class="line">        <span class="comment">// 纵向遍历</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">8</span>; i += <span class="number">1</span>) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">1024</span> * <span class="number">1024</span>; j++) &#123;</span><br><span class="line">                sum += arr[j][i];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(<span class="string">"Loop times:"</span> + (System.currentTimeMillis() - marked) + <span class="string">"ms"</span>);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>通过上面这段代码对一个二维数组进行纵向和横向的遍历，最后输出结果是：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Loop times:<span class="number">19</span>ms</span><br><span class="line">Loop times:<span class="number">48</span>ms</span><br></pre></td></tr></table></figure>
+<p>当使用纵向遍历时，每次遍历都需要从内存里重新读取数据，之前读取的只能作废，多次访问内存导致耗时更长。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left"><strong>从CPU到</strong></th>
+<th><strong>大约需要的CPU周期</strong></th>
+<th><strong>大约需要的时间</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">主存</td>
+<td>-</td>
+<td>约60-80ns</td>
+</tr>
+<tr>
+<td style="text-align:left">QPI 总线传输(between sockets, not drawn)</td>
+<td>-</td>
+<td>约20ns</td>
+</tr>
+<tr>
+<td style="text-align:left">L3 cache</td>
+<td>约40-45 cycles</td>
+<td>约15ns</td>
+</tr>
+<tr>
+<td style="text-align:left">L2 cache</td>
+<td>约10 cycles</td>
+<td>约3ns</td>
+</tr>
+<tr>
+<td style="text-align:left">L1 cache</td>
+<td>约3-4 cycles</td>
+<td>约1ns</td>
+</tr>
+<tr>
+<td style="text-align:left">寄存器</td>
+<td>1 cycle</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="4-伪共享"><a href="#4-伪共享" class="headerlink" title="#4 伪共享"></a>#4 伪共享</h3><p>如同提到CAS就无法避免提到ABA问题一样，伪共享问题也是CPU缓存行相关的一定会提及的问题。</p>
+<p>伪共享指的是多个线程同时读写同一个缓存行的不同变量时导致的 CPU 缓存失效。因为这些变量位于主存中邻近的位置，所以他们存在于一个缓存行中，当对缓存行的某个数据进行操作，就会导致整个缓存行失效，导致如果需要读取本应在此缓存行中的数据需要从主存中重新读区。这样，在频繁的多线程操作下，CPU 缓存将会彻底失效，降级为 CPU core 和主内存的直接交互。</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/伪共享.png" alt="img"  /></p>
+<p>伪共享问题的解决方式就是<strong>字节填充</strong></p>
+<p>字节填充的宗旨就是不同线程的变量存在不同的缓存行上，这样多个线程的操作就不会造成彼此的缓存行失效，使用多余的字节填充就可以实现这一点。</p>
+<p>字节填充可以用<strong>Padding方式</strong>实现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">为了避免 JVM 的自动优化，需要使用继承的方式来填充</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">AbstractPaddingObject</span></span>&#123;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">long</span> p1, p2, p3, p4, p5, p6;<span class="comment">// 填充</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">PaddingObject</span> <span class="keyword">extends</span> <span class="title">AbstractPaddingObject</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">volatile</span> <span class="keyword">long</span> value = <span class="number">0L</span>;    <span class="comment">// 实际数据</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>实际数据 value + 用于填充的 p1~p6 总共只占据了 7 <em> 8 = 56 个字节，而 Cache Line 的大小应当是 64 字节，这是有意而为之，在 Java 中，<em>* 对象头还占据了 8 个字节 </em></em>，所以一个 PaddingObject 对象可以恰好占据一个 Cache Line。</p>
+<p>Java8中提供了<strong>官方的字节填充注释</strong>实现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> sun.misc;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.lang.annotation.ElementType;</span><br><span class="line"><span class="keyword">import</span> java.lang.annotation.Retention;</span><br><span class="line"><span class="keyword">import</span> java.lang.annotation.RetentionPolicy;</span><br><span class="line"><span class="keyword">import</span> java.lang.annotation.Target;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Retention</span>(RetentionPolicy.RUNTIME)</span><br><span class="line"><span class="meta">@Target</span>(&#123;ElementType.FIELD, ElementType.TYPE&#125;)</span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> Contended &#123;</span><br><span class="line">    <span class="function">String <span class="title">value</span><span class="params">()</span> <span class="keyword">default</span> ""</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** </span></span><br><span class="line"><span class="comment">注意需要同时开启 JVM 参数：</span></span><br><span class="line"><span class="comment">-XX:-RestrictContended=false</span></span><br><span class="line"><span class="comment">**/</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>@Contended 注解会增加目标实例大小，来使各个变量在Cache line中分隔开,要谨慎使用。默认情况下，除了 JDK 内部的类，JVM 会忽略该注解。要应用代码支持的话，要设置 -XX:-RestrictContended=false，它默认为 true（意味仅限 JDK 内部的类使用）。当然，也有个 –XX: EnableContented 的配置参数，来控制开启和关闭该注解的功能，默认是 true，如果改为 false，可以减少 Thread 和 ConcurrentHashMap 类的大小。参见《Java 性能权威指南》210 页。</p>
+</blockquote>
+<p>Java中很多地方都用到了这个注解，比如 <code>ConcurrentHashMap</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* ---------------- Counter support -------------- */</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * A padded cell for distributing counts.  Adapted from LongAdder</span></span><br><span class="line"><span class="comment"> * and Striped64.  See their internal docs for explanation.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@sun</span>.misc.Contended <span class="keyword">static</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">CounterCell</span> </span>&#123;</span><br><span class="line">    <span class="keyword">volatile</span> <span class="keyword">long</span> value;</span><br><span class="line">    CounterCell(<span class="keyword">long</span> x) &#123;value = x;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Thread</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// The following three initially uninitialized fields are exclusively</span></span><br><span class="line"><span class="comment">// managed by class java.util.concurrent.ThreadLocalRandom. These</span></span><br><span class="line"><span class="comment">// fields are used to build the high-performance PRNGs in the</span></span><br><span class="line"><span class="comment">// concurrent code, and we can not risk accidental false sharing.</span></span><br><span class="line"><span class="comment">// Hence, the fields are isolated with @Contended.</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/** The current seed for a ThreadLocalRandom */</span></span><br><span class="line"><span class="meta">@sun</span>.misc.Contended(<span class="string">"tlr"</span>)</span><br><span class="line"><span class="keyword">long</span> threadLocalRandomSeed;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** Probe hash value; nonzero if threadLocalRandomSeed initialized */</span></span><br><span class="line"><span class="meta">@sun</span>.misc.Contended(<span class="string">"tlr"</span>)</span><br><span class="line"><span class="keyword">int</span> threadLocalRandomProbe;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** Secondary seed isolated from public ThreadLocalRandom sequence */</span></span><br><span class="line"><span class="meta">@sun</span>.misc.Contended(<span class="string">"tlr"</span>)</span><br><span class="line"><span class="keyword">int</span> threadLocalRandomSecondarySeed;</span><br></pre></td></tr></table></figure>
+<h2 id="三、加锁与CAS"><a href="#三、加锁与CAS" class="headerlink" title="三、加锁与CAS"></a>三、加锁与CAS</h2><h3 id="Java内置队列"><a href="#Java内置队列" class="headerlink" title="#Java内置队列"></a>#Java内置队列</h3><p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20210529033830072.png" alt="image-20210529033830072"></p>
+<p>在学习Disruptor之前，先看下Java内置的线程安全队列存在的问题：</p>
+<p>​    队列的实现方式一般是三种：数组、链表、堆，其中堆实现是为了实现带优先级的队列；这里就只专注于数组和链表实现的队列：</p>
+<p>​    基于数组线程安全的队列，典型的是ArrayBlockingQueue，它主要通过加锁的方式来保证线程安全；</p>
+<p>​    基于链表的线程安全队列分成LinkedBlockingQueue和ConcurrentLinkedQueue两大类，前者也通过锁的方式来实现线程安全，而后者以及上面表格中的LinkedTransferQueue都是通过原子变量CAS无锁的方式来实现的。</p>
+<blockquote>
+<p><strong>有界性</strong>：是否保证队列的长度在确定的范围内 。</p>
+</blockquote>
+<p>​     不加锁实现的队列都是无界的，加锁实现的队列都是有界的，为了追求稳定性，防止生产者速度过快，导致内存溢出，只能选择有界队列；同时，为了减少Java的垃圾回收对系统性能的影响，会尽量选择array/heap格式的数据结构。这样筛选下来，符合条件的队列就只有ArrayBlockingQueue。</p>
+<p>Disrupor的论文中进行了一次实验，64位的计数器循环自增5亿次，使用不同的实现方式的耗时情况如下：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Time (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Single thread</td>
+<td>300</td>
+</tr>
+<tr>
+<td>Single thread with CAS</td>
+<td>5,700</td>
+</tr>
+<tr>
+<td>Single thread with lock</td>
+<td>10,000</td>
+</tr>
+<tr>
+<td>Single thread with volatile write</td>
+<td>4,700</td>
+</tr>
+<tr>
+<td>Two threads with CAS</td>
+<td>30,000</td>
+</tr>
+<tr>
+<td>Two threads with lock</td>
+<td>224,000</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>单线程情况下，无锁性能 &gt; CAS的性能 &gt; 加锁的性能</p>
+<p>多线程情况下为了保证线程安全，必须要使用CAS或者锁，因此CAS的性能要优于加锁的性能，大约是8倍的差别。</p>
+<h3 id="锁"><a href="#锁" class="headerlink" title="#锁"></a>#锁</h3><p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/9b6a41f7d8527df9730b7832b38ec4d5180025.png" alt="图1 通过加锁的方式实现线程安全" style="zoom:50%;" /></p>
+<p>  加锁的方式中访问数据需要先加锁再访问，访问后解锁。保证同时只有一个线程访问。</p>
+<h3 id="原子变量"><a href="#原子变量" class="headerlink" title="#原子变量"></a>#原子变量</h3><p>​    原子变量能够保证原子性的操作，在某个任务的执行过程中，要么全部成功，要么全部失败回滚。</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/de0ced42337014947e7466db4d8f2d4d158395.png" alt="图2 通过原子变量CAS实现线程安全"></p>
+<p>如图，CAS操作回将现在的value和当初读出的值进行比较，若相同则赋值；若不同则执行失败。</p>
+<h2 id="四、Disruptor"><a href="#四、Disruptor" class="headerlink" title="四、Disruptor"></a>四、Disruptor</h2><h3 id="背景"><a href="#背景" class="headerlink" title="#背景"></a>#背景</h3><p>​    Disruptor是英国外汇交易公司LMAX开发的一个高性能队列，研发的初衷是解决内存队列的延迟问题（在性能测试中发现竟然与I/O操作处于同样的数量级）。基于Disruptor开发的系统单线程能支撑每秒600万订单，2010年在QCon演讲后，获得了业界关注。2011年，企业应用软件专家Martin Fowler专门撰写长文介绍。同年它还获得了Oracle官方的Duke大奖。</p>
+<h3 id="Disruptor的解决方案"><a href="#Disruptor的解决方案" class="headerlink" title="#Disruptor的解决方案"></a>#Disruptor的解决方案</h3><ul>
+<li><strong>环形数组</strong>：避免垃圾回收，使用数组而不是链表，而且对缓存机制更加友好；</li>
+<li><strong>元素位置定位</strong>：数组长度2^n，通过位运算快速定位，index是long类型，即便是100万qps，也需要30万年才能用完；</li>
+<li><strong>无锁设计</strong>：每个生产者或消费者线程，会先申请可操作元素在数组中的位置，申请到之后才会在该位置写入或者读取数据。</li>
+</ul>
+<h3 id="无锁设计实现生产与消费"><a href="#无锁设计实现生产与消费" class="headerlink" title="#无锁设计实现生产与消费"></a>#无锁设计实现生产与消费</h3><h4 id="单个生产者"><a href="#单个生产者" class="headerlink" title="单个生产者"></a>单个生产者</h4><p>单线程生产者写入数据，这种情况比较简单：</p>
+<ol>
+<li>申请写入m个元素；</li>
+<li>若有m个元素可以写入，则返回最大的序号，这里会判断一下是否会覆盖未消费的元素；</li>
+<li>如果返回正确的最大序号，那么生产者就开始写入元素；</li>
+</ol>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/e71c1449273361ec413fffc7b0bf5507208689.png" alt="图5 单个生产者生产过程示意图" style="zoom:50%;" /></p>
+<h4 id="多个生产者"><a href="#多个生产者" class="headerlink" title="多个生产者"></a>多个生产者</h4><p>多个生产者的情况下，“如何防止多个线程重复写入同一元素”，Disruptor为了解决这个问题，让每个线程获取不通的一段数组空间来进行操作，这个只需要通过CAS就可以轻松做到。</p>
+<p>但是在消费者消费时，可能消费到还未写入的元素，于是Disruptor引入了一个和RingBuffer大小相同的buffer：available Buffer。当某个位置写入成功的时候，便需要把available buffer对应的位置置位，在消费的时候会先确定available buffer中对应的位置是否是已经置位的状态，来判断是否已经可以进行消费。</p>
+<p><strong>写数据</strong></p>
+<ol>
+<li>申请写入m个元素；</li>
+<li>若是有m个元素可以写入，则返回最大的序列号。每个生产者会被分配一段独享的空间；</li>
+<li>生产者写入元素，写入元素的同时设置available Buffer里面相应的位置，以标记自己哪些位置是已经写入成功的。</li>
+</ol>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/5e06841b1bba4dcf1d3fac169734ba36133983.png" alt="图7 多个生产者情况下，生产者生产过程示意图" style="zoom:50%;" /></p>
+<p><strong>读数据</strong></p>
+<ol>
+<li>申请读取到序号n；</li>
+<li>若writer cursor &gt;= n，这时仍然无法确定连续可读的最大下标。从reader cursor开始读取available Buffer，一直查到第一个不可用的元素，然后返回最大连续可读元素的位置；</li>
+<li>消费者读取元素。</li>
+</ol>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/99c603494ea90c9535e165579daf340a161527.png" alt="图6 多个生产者情况下，消费者消费过程示意图" style="zoom:50%;" /></p>
+<h3 id="Disruptor的使用Demo"><a href="#Disruptor的使用Demo" class="headerlink" title="#Disruptor的使用Demo"></a>#Disruptor的使用Demo</h3><h4 id="事件类"><a href="#事件类" class="headerlink" title="事件类"></a>事件类</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lcl.disruptor;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> lombok.Data;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> liuchanglin</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@version</span> 1.0</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@ClassName</span>: TestEvent</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>: 事件类</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@date</span> 2023/5/28 15:56</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestEvent</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String id;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="生产者类"><a href="#生产者类" class="headerlink" title="生产者类"></a>生产者类</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lcl.disruptor;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> com.lmax.disruptor.RingBuffer;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> liuchanglin</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@version</span> 1.0</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@ClassName</span>: TestEventProducer</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>: 生产者类</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@date</span> 2023/5/28 15:56</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestEventProducer</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> RingBuffer&lt;TestEvent&gt; ringBuffer;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">TestEventProducer</span><span class="params">(RingBuffer&lt;TestEvent&gt; ringBuffer)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.ringBuffer = ringBuffer;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onData</span><span class="params">(String orderId)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> sequence = ringBuffer.next();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            TestEvent testEvent = ringBuffer.get(sequence);</span><br><span class="line">            testEvent.setId(orderId);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            ringBuffer.publish(sequence);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="消费者类"><a href="#消费者类" class="headerlink" title="消费者类"></a>消费者类</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lcl.disruptor;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> com.lmax.disruptor.EventHandler;</span><br><span class="line"><span class="keyword">import</span> com.lmax.disruptor.WorkHandler;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> liuchanglin</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@version</span> 1.0</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@ClassName</span>: TestEventHandler</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>: 消费者类</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@date</span> 2023/5/28 16:06</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestEventHandler</span> <span class="keyword">implements</span> <span class="title">EventHandler</span>&lt;<span class="title">TestEvent</span>&gt;, <span class="title">WorkHandler</span>&lt;<span class="title">TestEvent</span>&gt; </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onEvent</span><span class="params">(TestEvent testEvent, <span class="keyword">long</span> sequence, <span class="keyword">boolean</span> endOfBatch)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"threadName: "</span> + Thread.currentThread().getName() + <span class="string">", event: "</span> + testEvent + <span class="string">", sequence: "</span> + sequence + <span class="string">", endOfBatch: "</span> + endOfBatch);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onEvent</span><span class="params">(TestEvent testEvent)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"threadName: "</span> + Thread.currentThread().getName() + <span class="string">", event: "</span> + testEvent);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="Demo"><a href="#Demo" class="headerlink" title="Demo"></a>Demo</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lcl.disruptor;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> com.lmax.disruptor.RingBuffer;</span><br><span class="line"><span class="keyword">import</span> com.lmax.disruptor.YieldingWaitStrategy;</span><br><span class="line"><span class="keyword">import</span> com.lmax.disruptor.dsl.Disruptor;</span><br><span class="line"><span class="keyword">import</span> com.lmax.disruptor.dsl.ProducerType;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.UUID;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.ExecutorService;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.Executors;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> liuchanglin</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@version</span> 1.0</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@ClassName</span>: TestDisruptorDemo</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>: demo</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@date</span> 2023/5/28 16:10</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestDisruptorDemo</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Disruptor&lt;TestEvent&gt; disruptor = <span class="keyword">new</span> Disruptor&lt;&gt;(</span><br><span class="line">                TestEvent::<span class="keyword">new</span>,</span><br><span class="line">                <span class="number">1024</span> * <span class="number">1024</span>,</span><br><span class="line">                Executors.defaultThreadFactory(),</span><br><span class="line">                ProducerType.SINGLE,</span><br><span class="line">                <span class="keyword">new</span> YieldingWaitStrategy() <span class="comment">//拒绝策略 自旋</span></span><br><span class="line">        );</span><br><span class="line"><span class="comment">//        disruptor.handleEventsWith(new TestEventHandler());</span></span><br><span class="line"><span class="comment">//        多消费者 重复消费</span></span><br><span class="line"><span class="comment">//        disruptor.handleEventsWith(new TestEventHandler(), new TestEventHandler());</span></span><br><span class="line"><span class="comment">//        多消费者 只消费一次</span></span><br><span class="line">        disruptor.handleEventsWithWorkerPool(<span class="keyword">new</span> TestEventHandler(), <span class="keyword">new</span> TestEventHandler());</span><br><span class="line">        disruptor.start();</span><br><span class="line">        RingBuffer&lt;TestEvent&gt; ringBuffer = disruptor.getRingBuffer();</span><br><span class="line">        TestEventProducer eventProducer = <span class="keyword">new</span> TestEventProducer(ringBuffer);</span><br><span class="line"><span class="comment">//        eventProducer.onData(UUID.randomUUID().toString());</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//        多个生产者</span></span><br><span class="line">        ExecutorService fixedThreadPool = Executors.newFixedThreadPool(<span class="number">100</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100</span>; i++) &#123;</span><br><span class="line">            fixedThreadPool.execute(() -&gt; eventProducer.onData(UUID.randomUUID().toString()));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="五、Disruptor-源码分析"><a href="#五、Disruptor-源码分析" class="headerlink" title="五、Disruptor 源码分析"></a>五、Disruptor 源码分析</h3><h4 id="核心设计"><a href="#核心设计" class="headerlink" title="#核心设计"></a>#核心设计</h4><ul>
+<li><strong>Event</strong> <em>在Disruptor框架中，事件是通过系统流动的数据单元。生产者创建事件，然后通过RingBuffer发布事件，消费者则从RingBuffer中获取事件并处理</em>  </li>
+<li><strong>EventFactory</strong> <em>这是用于创建事件对象的工厂。由于Disruptor使用预分配的事件缓冲区（即RingBuffer），因此需要在启动时创建所有的事件对象。EventFactory就是用于创建这些事件对象的工厂接口。</em></li>
+<li><strong>EventHandler</strong> <em>事件处理器是消费者的一部分，负责处理从RingBuffer中获取的事件。</em></li>
+<li><strong>RingBuffer（环形缓冲区）</strong>：RingBuffer是Disruptor框架的核心。它是一个预分配的缓冲区，用于存储事件对象。生产者发布事件到RingBuffer，消费者则从RingBuffer中获取事件。</li>
+<li><strong>Disruptor</strong>：这是框架的主类，用于配置和启动Disruptor系统。它包括生产者、消费者、RingBuffer以及事件处理逻辑等组成部分。</li>
+</ul>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/e665f3a95e5c47568f36437fc2ea5340~tplv-k3u1fbpfcp-zoom-in-crop-mark-3024-0-0-0.image.png" alt="e665f3a95e5c47568f36437fc2ea5340~tplv-k3u1fbpfcp-zoom-in-crop-mark-3024-0-0-0.image"  /></p>
+<h4 id="创建Disruptor"><a href="#创建Disruptor" class="headerlink" title="#创建Disruptor"></a>#创建Disruptor</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">Disruptor</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> EventFactory&lt;T&gt; eventFactory, //事件的构成器</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> <span class="keyword">int</span> ringBufferSize, // RingBuffer长度 容量</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> ThreadFactory threadFactory, // 消费线程的创建工厂</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> ProducerType producerType, // 单生产者模式或者多生产者模式 默认多生产者</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> WaitStrategy waitStrategy)</span> <span class="comment">// 等待策略 （RingBuffer中为空</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">this</span>(</span><br><span class="line">        RingBuffer.create(producerType, eventFactory, ringBufferSize, waitStrategy),</span><br><span class="line">        <span class="keyword">new</span> BasicExecutor(threadFactory));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="title">Disruptor</span><span class="params">(<span class="keyword">final</span> RingBuffer&lt;T&gt; ringBuffer, <span class="keyword">final</span> Executor executor)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.ringBuffer = ringBuffer;</span><br><span class="line">    <span class="keyword">this</span>.executor = executor;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>​    构造方法创建了<code>RingBuffer</code>和一个<code>Executor</code>，这两个组件构成了一个<code>Disruptor</code>。</p>
+<p>​    <strong>RingBuffer</strong> 负责存储事件，申请Sequence和 publish event。</p>
+<p>​    <strong>Excutor</strong> 负责运行消费逻辑</p>
+<h4 id="创建RingBuffer"><a href="#创建RingBuffer" class="headerlink" title="#创建RingBuffer"></a>#创建RingBuffer</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> &lt;E&gt; <span class="function">RingBuffer&lt;E&gt; <span class="title">create</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    ProducerType producerType,</span></span></span><br><span class="line"><span class="function"><span class="params">    EventFactory&lt;E&gt; factory,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> bufferSize,</span></span></span><br><span class="line"><span class="function"><span class="params">    WaitStrategy waitStrategy)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">switch</span> (producerType)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">case</span> SINGLE:</span><br><span class="line">            <span class="keyword">return</span> createSingleProducer(factory, bufferSize, waitStrategy);</span><br><span class="line">        <span class="keyword">case</span> MULTI:</span><br><span class="line">            <span class="keyword">return</span> createMultiProducer(factory, bufferSize, waitStrategy);</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(producerType.toString());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>​    根据生产者类型的不同（单生产者 or 多生产者）存在两种不同类型的RingBuffer。</p>
+<p><strong>单生产者类型RingBuffer</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// class RingBuffer</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> &lt;E&gt; <span class="function">RingBuffer&lt;E&gt; <span class="title">createSingleProducer</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    EventFactory&lt;E&gt; factory,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> bufferSize,</span></span></span><br><span class="line"><span class="function"><span class="params">    WaitStrategy waitStrategy)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    SingleProducerSequencer sequencer = <span class="keyword">new</span> SingleProducerSequencer(bufferSize, waitStrategy);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> RingBuffer&lt;E&gt;(factory, sequencer);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>​    RingBuffer的创建需要两个组件，一个SingleProducerSequencer和一个EventFactory。</p>
+<p><strong>RingBuffer</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// class RingBuffer</span></span><br><span class="line">RingBuffer(</span><br><span class="line">    EventFactory&lt;E&gt; eventFactory,</span><br><span class="line">    Sequencer sequencer)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">super</span>(eventFactory, sequencer);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// class RingBufferFields</span></span><br><span class="line">RingBufferFields(</span><br><span class="line">    EventFactory&lt;E&gt; eventFactory,</span><br><span class="line">    Sequencer sequencer)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// sequence申请、维护以及发布</span></span><br><span class="line">    <span class="keyword">this</span>.sequencer = sequencer;</span><br><span class="line">    <span class="keyword">this</span>.bufferSize = sequencer.getBufferSize();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (bufferSize &lt; <span class="number">1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"bufferSize must not be less than 1"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (Integer.bitCount(bufferSize) != <span class="number">1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"bufferSize must be a power of 2"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// indexMask主要是为了使用位运算取模的</span></span><br><span class="line">    <span class="keyword">this</span>.indexMask = bufferSize - <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// 可以看到这个数组除了正常的size之外还有填充的元素，这个是为了解决false sharing的，本篇文章暂不展开</span></span><br><span class="line">    <span class="keyword">this</span>.entries = <span class="keyword">new</span> Object[sequencer.getBufferSize() + <span class="number">2</span> * BUFFER_PAD];</span><br><span class="line">    <span class="comment">// 预先填充数组元素，这对垃圾回收很优化，后续发布事件等操作都不需要创建对象，而只需要即可</span></span><br><span class="line">    fill(eventFactory);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// class RingBufferFields</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">fill</span><span class="params">(EventFactory&lt;E&gt; eventFactory)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; bufferSize; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        entries[BUFFER_PAD + i] = eventFactory.newInstance();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>BUFFER_PAD 是一个常量 128 / scale 表示 ，创建数组时填充的数组空间个数，在64位jvm中大概是16个空间，为两倍的缓存行大小，避免了数组的开头和结尾在同一个缓存行而导致并发中的伪共享问题。</p>
+<p><strong>BasicExecutor</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BasicExecutor</span> <span class="keyword">implements</span> <span class="title">Executor</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">BasicExecutor</span><span class="params">(ThreadFactory factory)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.factory = factory;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>BasicExecutor的创建直接使用了<code>java.util.concurrent.Executor</code>接口实现，通过单参数<code>ThreadFactory</code>构造。</p>
+<h4 id="事件处理逻辑注册-handleEventsWith"><a href="#事件处理逻辑注册-handleEventsWith" class="headerlink" title="#事件处理逻辑注册 handleEventsWith"></a>#事件处理逻辑注册 handleEventsWith</h4><p>​    在上面的<code>TestDisruptorDemo</code>中，将Disruptor创建完成后，需要通过调用<code>handleEventsWith</code>相关方法完成事件处理逻辑的注册</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">disruptor.handleEventsWith(<span class="keyword">new</span> TestEventHandler());</span><br></pre></td></tr></table></figure>
+<p>​    而方法的源代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> EventHandlerGroup&lt;T&gt; <span class="title">handleEventsWith</span><span class="params">(<span class="keyword">final</span> EventHandler&lt;? <span class="keyword">super</span> T&gt;... handlers)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 第一个参数为一个空数组</span></span><br><span class="line">    <span class="keyword">return</span> createEventProcessors(<span class="keyword">new</span> Sequence[<span class="number">0</span>], handlers);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>liuchanglin</span>
+                    </p>
+                
+                
+                
+                
+                     <p class="copyright-item">
+                         <span>Slogan:</span>
+                         <span><strong>我惭携宝剑，只为看山来.</strong></span>
+                     </p>
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tags/Java/"># Java</a>
+                    
+                        <a href="/tags/DataStructure/"># DataStructure</a>
+                    
+                        <a href="/tags/Algorithm/"># Algorithm</a>
+                    
+                        <a href="/tags/Computer-Science/"># Computer Science</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2021/10/24/RateLimiter-Guava%E9%99%90%E6%B5%81%E5%B7%A5%E5%85%B7%E7%B1%BB/">RateLimiter Guava限流工具类</a>
+            
+            
+            <a class="next" rel="next" href="/2021/02/15/workReview-%E6%96%B0%E6%9C%8D%E5%8A%A1%E7%9A%84%E5%88%9B%E5%BB%BA-%E9%83%A8%E7%BD%B2-%E5%BC%80%E5%8F%91/">workReview:新服务的创建&部署&开发</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+        </div>
+        <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© liuchanglin | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+</html>
