@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="liuchanglin">
+
+
+
+
+
+<title>Netty Study(一):基本知识 | liuchanglin &#39;s blog</title>
+
+
+
+    <link rel="icon" href="/img.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+<body>
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">LiuChanglin&#39;s Blog</a></div>
+            <div class="menu navbar-right">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+                <input id="switch_default" type="checkbox" class="switch_default">
+                <label for="switch_default" class="toggleBtn"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">LiuChanglin&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if(toggleMenu.classList.contains("active")){
+           toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        }else{
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+        <div class="main">
+            <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    document.ready(
+        function () {
+            tocbot.init({
+                tocSelector: '.tocbot-list',
+                contentSelector: '.post-content',
+                headingSelector: 'h1, h2, h3, h4, h5',
+                collapseDepth: 1,
+                orderedList: false,
+                scrollSmooth: true,
+            })
+        }
+    )
+
+    function expand_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 6,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "collapse_toc()");
+        b.innerHTML = "Collapse all"
+    }
+
+    function collapse_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 1,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "expand_toc()");
+        b.innerHTML = "Expand all"
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">Netty Study(一):基本知识</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">liuchanglin</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">October 17, 2020&nbsp;&nbsp;16:54:25</a>
+                        </span>
+                    
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <h2 id="零、写在前面"><a href="#零、写在前面" class="headerlink" title="零、写在前面"></a>零、写在前面</h2><p>​    七月份入职之后到现在已经三个多月了，我也顺利转正了，这几个月也在公司学习了很多东西，每周的技术分享都有让我想学的知识出现，之后有把所有想学的东西写在笔记里（真他妈多😅）。面对这么多的知识一度十分焦虑，不知道从何学起，不过仔细想想，这些东西能在两三年内学到我理想的程度已经很不错了。</p>
+<p>​    Netty相关已经看了很久了，七月底的时候就开始看《Netty实战》，但是公司越来越忙，导致书看了忘，忘了再看，一直停留在原地没有进展，这次准备把之前看的书总结一下，省的再回去看忘掉的知识，同时也要尽快把Netty学习提上日程。这也是为了后续手写RPC框架的计划作准备。</p>
+<h2 id="一、常见IO线程模型"><a href="#一、常见IO线程模型" class="headerlink" title="一、常见IO线程模型"></a>一、常见IO线程模型</h2><p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/77752ed5.jpg" alt="emma_1"></p>
+<p>​    任何一个IO过程中，都包含两个步骤：第一个是等待，第二是拷贝。而在实际应用的场景中，等待消耗的时间远远高于拷贝的时间；举例来说，<code>读函数</code>，分为等待系统可读和真正的读；同理，写函数分为等待网卡可以写和真正的写。需要说明的是等待就绪的阻塞时不使用CPU资源的，是在“空等”；而真正的读写操作的阻塞是使用CPU的，这个过程很快，甚至可以理解成基本不耗时。</p>
+<p>​    <strong>为了让IO更加高效，最核心的方法就是让等待的时间尽可能的变少。</strong></p>
+<h3 id="1-阻塞IO"><a href="#1-阻塞IO" class="headerlink" title="#1 阻塞IO"></a>#1 阻塞IO</h3><p>​    在内核将数据准备好之前，系统调用会一直等待。所有的套接字（socke），默认都是阻塞方式，<strong>阻塞式是最常见的IO模型，属于同步IO模型。</strong></p>
+<p>​    例子：A拿着一支鱼竿在河边钓鱼，并且一直在鱼竿前等，在等的时候不做其他的事情，十分专心。只有鱼上钩的时，才结束掉等的动作，把鱼钓上来。</p>
+<p>​    <img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/v2-7ee1abb79d9c79b1378c3ede0528bfa4_r.jpg" alt="preview"></p>
+<h3 id="2-非阻塞IO"><a href="#2-非阻塞IO" class="headerlink" title="#2 非阻塞IO"></a>#2 非阻塞IO</h3><p>​    如果内核没有将数据准备好，系统的调用仍然会直接返回，并且返回EWOULDBLOCK错误码，非阻塞IO往往需要程序员循环的方式反复尝试读写文件描述符，这个过程被称为论询。这对CPU来说是比较大的浪费，<strong>非阻塞IO也属于同步IO模型。</strong></p>
+<p>​    例子： B也在河边钓鱼，但是B不想将自己的所有时间都花费在钓鱼上，在等鱼上钩这个时间段中，B在做其他的事情（刷牛客或者刷知乎），但B在做这些事情的时候，每隔一个固定的时间检查鱼是否上钩。一旦检查到有鱼上钩，就停下手中的事情，把鱼钓上来。</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/v2-7f84267dc58c969fedd5606c76bd5905_r.jpg" alt="preview"></p>
+<h2 id="二、BIO、NIO、AIO"><a href="#二、BIO、NIO、AIO" class="headerlink" title="二、BIO、NIO、AIO"></a>二、BIO、NIO、AIO</h2><h3 id="1-BIO（Blocking-I-O）"><a href="#1-BIO（Blocking-I-O）" class="headerlink" title="#1 BIO（Blocking I/O）"></a>#1 BIO（Blocking I/O）</h3><p>​    早期的网络编程开发人员，需要花费大量的时间去学习复杂的C语言套接字(Socket)库，但是会经常在不同的操作系统上出现奇怪的问题。早期的Java提供了java.net包下的API，支持使用由本地系统套接字库提供的阻塞函数。也就是BIO。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//创建一个新的ServerSocket，用来监听指定端口上的连接请求</span></span><br><span class="line">ServerSocket serverSocket = <span class="keyword">new</span> ServerSocket(portNumber);</span><br><span class="line"><span class="comment">//对accept方法的调用将会被一直阻塞，直到一个链接的建立</span></span><br><span class="line">Socket clientSocket = serverSocket.accept(); </span><br><span class="line"><span class="comment">//</span></span><br><span class="line">BufferedReader in = <span class="keyword">new</span> BufferedReader(</span><br><span class="line">  <span class="keyword">new</span> InputStreamReader(clientSocket.getInputStream()));</span><br><span class="line">PrintWriter out = <span class="keyword">new</span> PrintWriter(clientSocket.getOutputStream(), <span class="keyword">true</span>); </span><br><span class="line">String request, response;</span><br><span class="line"><span class="keyword">while</span> ((request = in.readLine()) != <span class="keyword">null</span>) &#123;</span><br><span class="line">  <span class="comment">//如果客户端发送了‘Done’ 推出循环</span></span><br><span class="line">	<span class="keyword">if</span> (<span class="string">"Done"</span>.equals(request)) &#123;</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  &#125; </span><br><span class="line">  <span class="comment">//把客户端请求发送给服务器的handler方法</span></span><br><span class="line">  response = processRequest(request);</span><br><span class="line">	out.println(response); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>​    采用BIO通信模型的服务端，通常会有一个独立的Acceptor线程负责监听客户端的链接。在while（true）循环中服务端会调用accept()方法等待接受客户端的链接方式监听请求，请求一旦接受到一个链接请求，就可以建立通信套接字在这个通信套接字上进行读写操作，此时不能再接受其他客户端的链接请求，只能等待当前链接的客户端的操作执行完成，也就是说这段代码只能同时处理一个连接，不过可以<strong>通过多线程</strong>来支持多个客户端的链接。 </p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20201018154929638.png" alt="image-20201018154929638"></p>
+<blockquote>
+<p>​    让我们考虑一下这种方案的影响。第一，在任何时候都可能有大量的线程处于休眠状态，只是等待输 入或者输出数据就绪，这可能算是一种资源浪费。第二，需要为每个线程的调用栈都分配内存，其默认值大小区间为64KB 到1MB，具体取决于操作系统。第三，即使 Java 虚拟机(JVM)在物理上可以支持非常大数量的线程，但是远在到达该极限之前，上下文切换所带来的开销就会带来麻烦，例如，在达到10000个连接的时候。</p>
+<p>​                                                                                                                                    ——《Netty in Action》</p>
+</blockquote>
+<h3 id="2-NIO（Non-Blocking-IO）"><a href="#2-NIO（Non-Blocking-IO）" class="headerlink" title="#2 NIO（Non-Blocking IO）"></a>#2 NIO（Non-Blocking IO）</h3><p>​    NIO是一种同步非阻塞的I/O模型，在Java 1.4中引入了NIO框架，对应Java.nio包，提供了Channel，Selector，Buffer等抽象。</p>
+<p>​    NIO中的N可以理解为<strong>Non-blocking</strong>，不单纯是New。它支持面向缓冲的，基于通道的I/O操作方法。NIO提供了与传统BIO模型中的Socket和ServerSocket相对应的<strong>SocketChannel</strong>和<strong>ServerSocketChannel</strong>两种不同套接字通道实现，阻塞模式使用就像传统的支持一样，比较简单，但是性能和可用性都不好，但是非阻塞正好与他相反，<strong>对于低负载、低并发的应用程序，可以使用同步阻塞I/O来提升开发速率和更好的维护性；对于高负载、高并发的（网络）应用，应使用NIO的非阻塞模式来开发。</strong></p>
+<p><strong>选择器</strong></p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20201018165658369.png" alt="image-20201018165658369"></p>
+<p>​    图中的这种非阻塞设计，消除了上边BIO的那些弊端，Selector是Java的NIO实现的关键。检查一个或者多个NIO Channel（通道）的状态是否处于可读、可写。它使用事件通知API以确定在一组非阻塞套接字中那些已经就绪可以进行IO相关的操作。</p>
+<h3 id="3-AIO（Asynchronous-IO）"><a href="#3-AIO（Asynchronous-IO）" class="headerlink" title="#3 AIO（Asynchronous IO）"></a>#3 AIO（Asynchronous IO）</h3><p>​    AIO 也就是 NIO 2。在 Java 7 中引入了 NIO 的改进版 NIO 2,它是<strong>异步非阻塞的IO模型</strong>。异步 IO 是基于<strong>事件和回调机制</strong>实现的，也就是应用操作之后会直接返回，不会堵塞在那里，当后台处理完成，操作系统会通知相应的线程进行后续的操作。</p>
+<p>​    AIO 是异步IO的缩写，虽然 NIO 在网络操作中，提供了非阻塞的方法，但是 NIO 的 IO 行为还是同步的。对于 NIO 来说，我们的业务线程是在 IO 操作准备好时，得到通知，接着就由这个线程自行进行 IO 操作，IO操作本身是同步的。（除了 AIO 其他的 IO 类型都是同步的，这一点可以从底层IO线程模型解释。</p>
+<h2 id="三、Netty"><a href="#三、Netty" class="headerlink" title="三、Netty"></a>三、Netty</h2><blockquote>
+<p>​    我们已经从漫长的痛苦经历中学到:直接使用底层的API暴露了复杂性，并且引入了对往往供不应求的技能的关键性依赖 。这也就是，面向对象的基本概念:</p>
+<p>​    <strong>用较简单的抽象隐藏底层实现的复杂性。</strong></p>
+<p>​     <strong>Hide complexity behind abstractions.</strong></p>
+</blockquote>
+<p>​    在这样的原则的驱使下，为了在高负载下可靠和高效的处理和调度IO操作，Netty应运而生，Netty驾驭了高级API的能力，并将其隐藏在一个易于使用的API之后。</p>
+<blockquote>
+<p>Netty是你可以专注于自己真正感兴趣的——你的应用程序独一无二的价值。</p>
+</blockquote>
+<h3 id="1-异步与事件驱动"><a href="#1-异步与事件驱动" class="headerlink" title="#1 异步与事件驱动"></a>#1 异步与事件驱动</h3><p><strong>同步和异步：</strong></p>
+<ul>
+<li><strong>同步</strong>：同步就是发起一个调用之后，<strong>被调用者未处理完请求之前</strong>，调用不返回。</li>
+<li><strong>异步</strong>：异步就是发起一个调用后，立刻得到被调用者的回应表示已接收到请求，但是被调用者并没有返回结果，此时我们可以处理其他的请求，被调用者通常依靠时间，回调机制来通知调用者其返回结果。</li>
+</ul>
+<p>同步和异步最大的区别在于异步的话调用者不需要等待处理结果，被调用者会通过回调机制来通知调用者其返回结果。</p>
+<p><strong>阻塞与非阻塞：</strong></p>
+<ul>
+<li><strong>阻塞</strong>：阻塞就是发起一个请求，<strong>调用者一直等待请求结果返回</strong>，也就是当前线程会被挂起，无法从事其他任务，只有当条件满足才能继续。</li>
+<li><strong>非阻塞</strong>：非阻塞就是发起一个请求，<strong>调用者不用一直等着结果返回</strong>，可以去先干其他事情。</li>
+</ul>
+<blockquote>
+<p>​    在日常的生活中，异步自然而然地就发生了，所以你可能没有对它考虑过多少。但是让一个 计算机程序以相同的方式工作就会产生一些非常特殊的问题。<strong>本质上，一个既是异步的又是事件驱动的系统会表现出一种特殊的、对我们来说极具价值的行为:它可以以任意的顺序响应在任意 的时间点产生的事件。</strong></p>
+<p>​                                                                                                                                    ——《Netty in Action》</p>
+</blockquote>
+<hr>
+<p>​    在直接看来，同步和阻塞，异步和非阻塞看起来描述的是一种情况，但是为什么还需要区分开来两类概念呢？这里我认为，<code>阻塞和非阻塞</code>，<code>异步和同步</code>其实是从两种维度来进行的描述。</p>
+<p>​    同步和异步关注的是<strong>消息通信机制</strong> (synchronous communication/asynchronous communication)是在描述<strong>调用</strong>与<strong>返回结果</strong>两者的关系。</p>
+<p>​    比如<strong>同步的机制下，调用就必须要有一个结果</strong>；没有结果，调用就不返回，也就是说<strong>调用者必须要主动等待这个调用的结果</strong>。</p>
+<p>​    而异步则是相反，调用在发出之后，这个调用就直接返回了，当一个<strong>异步过程调用发出后，调用者不会立刻得到结果</strong>。而是在调用发出后，被调用者通过<strong>状态、通知来通知调用者，或通过回调函数处理这个调用。</strong></p>
+<p>​    阻塞和非阻塞关注的是<strong>程序在等待调用结果（消息，返回值）时的状态.</strong></p>
+<p>​    阻塞调用是指调用结果返回之前，当前<strong>线程会被挂起</strong>。调用线程只有在得到结果之后才会返回。非阻塞调用指在不能立刻得到结果之前，该调用<strong>不会阻塞当前线程</strong>。</p>
+<h3 id="2-可伸缩性"><a href="#2-可伸缩性" class="headerlink" title="#2 可伸缩性"></a>#2 可伸缩性</h3><blockquote>
+<p>一种系统、网络或者进程在需要处理的工作不断增长时，可以通过某种可行的方式或者扩大它的处理能力来适应这种增长的能力 。</p>
+</blockquote>
+<p>​    异步的能力对于实现更高的<strong>可伸缩性</strong>至关重要。</p>
+<p>异步和可伸缩性之间的联系在于：</p>
+<ul>
+<li><p>非阻塞网络调用使得我们可以<strong>不必等待一个操作的完成</strong>。完全异步的 I/O 正是基于这个特性构建的，并且更进一步:<strong>异步方法会立即返回，并且在它完成时，会直接或者在稍后的某个时间点通知用户。</strong></p>
+</li>
+<li><p><strong>选择器</strong>使得我们能够通过较少的线程便可监视许多连接上的事件。</p>
+</li>
+</ul>
+<p>​    将这些元素结合到一起，与使用阻塞IO来处理大量连接相比，使用非阻塞IO来处理会更快速、更经济。这也是Netty设计的关键。</p>
+<h3 id="3-特性总结"><a href="#3-特性总结" class="headerlink" title="#3 特性总结"></a>#3 特性总结</h3><p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20201025144215918.png" alt="image-20201025144215918"></p>
+<p><strong>以上！</strong></p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>liuchanglin</span>
+                    </p>
+                
+                
+                
+                
+                     <p class="copyright-item">
+                         <span>Slogan:</span>
+                         <span><strong>我惭携宝剑，只为看山来.</strong></span>
+                     </p>
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tags/Java/"># Java</a>
+                    
+                        <a href="/tags/Netty/"># Netty</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2020/12/17/Netty-Study-%E4%BA%8C-Netty%E7%BB%84%E4%BB%B6/">Netty Study(二):Netty组件</a>
+            
+            
+            <a class="next" rel="next" href="/2020/10/04/%E9%9D%9E%E5%AF%B9%E7%A7%B0%E5%8A%A0%E5%AF%86%E2%80%94%E2%80%94RSA%E7%AE%97%E6%B3%95/">非对称加密——RSA算法</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+        </div>
+        <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© liuchanglin | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+</html>

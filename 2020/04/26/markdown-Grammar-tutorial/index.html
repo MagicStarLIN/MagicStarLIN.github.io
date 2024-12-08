@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="liuchanglin">
+
+
+
+
+
+<title>markdown Grammar tutorial | liuchanglin &#39;s blog</title>
+
+
+
+    <link rel="icon" href="/img.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+<body>
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">LiuChanglin&#39;s Blog</a></div>
+            <div class="menu navbar-right">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+                <input id="switch_default" type="checkbox" class="switch_default">
+                <label for="switch_default" class="toggleBtn"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">LiuChanglin&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if(toggleMenu.classList.contains("active")){
+           toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        }else{
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+        <div class="main">
+            <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    document.ready(
+        function () {
+            tocbot.init({
+                tocSelector: '.tocbot-list',
+                contentSelector: '.post-content',
+                headingSelector: 'h1, h2, h3, h4, h5',
+                collapseDepth: 1,
+                orderedList: false,
+                scrollSmooth: true,
+            })
+        }
+    )
+
+    function expand_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 6,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "collapse_toc()");
+        b.innerHTML = "Collapse all"
+    }
+
+    function collapse_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 1,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "expand_toc()");
+        b.innerHTML = "Expand all"
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">markdown Grammar tutorial</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">liuchanglin</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">April 26, 2020&nbsp;&nbsp;21:25:02</a>
+                        </span>
+                    
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <h1 id="Markdown常用基础语法"><a href="#Markdown常用基础语法" class="headerlink" title="Markdown常用基础语法"></a>Markdown常用基础语法</h1><p>先想想我们一般写作时候需要用到什么样的排版？</p>
+<p>无非就是标题、引用、强调（加粗、斜体、下划线）、插入链接、插入图片、列表（有序和无序列表），甚至连表格都很少用。</p>
+<p><strong>标题语法</strong></p>
+<p>Markdown一共支持6个级别大小的标题（对应于HTML语法里的h1~h6），写法很简单，就是在文字前空一格加上#号就行，几个#号就是几级标题，大小由大到小。</p>
+<p># 第一级标题 <code>&lt;h1&gt;</code> </p>
+<p>## 第二级标题 <code>&lt;h2&gt;</code> </p>
+<p>###### 第六级标题 <code>&lt;h6&gt;</code></p>
+<p>效果如下：</p>
+<h1 id="第一级标题"><a href="#第一级标题" class="headerlink" title="第一级标题"></a>第一级标题</h1><h2 id="第二级标题"><a href="#第二级标题" class="headerlink" title="第二级标题"></a>第二级标题</h2><h6 id="第六级标题"><a href="#第六级标题" class="headerlink" title="第六级标题"></a>第六级标题</h6><p><strong>引用语法</strong></p>
+<p>如果你想引用一段文字，那就使用大于号&gt;</p>
+<blockquote>
+<p>这是一段引用</p>
+<p>这是另一段引用</p>
+</blockquote>
+<p>效果如下：</p>
+<blockquote>
+<p>这是一段引用</p>
+<p>这是另一段引用</p>
+</blockquote>
+<p><strong>强调语法</strong></p>
+<p><strong>粗体</strong></p>
+<p>如果你想加粗一段文字，只需要在文字前后加两个*号</p>
+<p><strong> 我很重要！</strong></p>
+<p>效果如下：</p>
+<p><strong>我很重要哦！</strong></p>
+<p><strong>斜体 </strong></p>
+<p>如果你想让一段文字倾斜，只需要在文字前后加一个星号*</p>
+<p><em>我是比萨斜塔 </em></p>
+<p>效果如下：</p>
+<p><em>我是比萨斜塔</em></p>
+<p><strong>下划线</strong></p>
+<p>如果你想让一段文字加上下划线，只需要在文字前后加一个下划线_</p>
+<p>_ 人是社会性动物_</p>
+<p>效果如下：</p>
+<p>_人是社会性动物_</p>
+<p><strong>删除线</strong></p>
+<p>如果你想让一段文字加上删除线效果，只需要在文字前后加一个波浪线~</p>
+<p>~~ 我所说的都是错的~~</p>
+<p>效果如下：</p>
+<p><del>我所说的都是错的</del></p>
+<p><strong>插入链接</strong></p>
+<p>如果你想把一段文字加上链接指向到某个网址，就把文字用中括号围起来[]，然后加上一个小括号()，括号里填上网址即可。</p>
+<p>[向阳乔木的博客] (<a href="http://tuijiankan.com" target="_blank" rel="noopener">http://tuijiankan.com</a>)</p>
+<p>效果如下：</p>
+<p><a href="https://link.zhihu.com/?target=http%3A//tuijiankan.com">向阳乔木的博客</a></p>
+<p><strong>插入图片</strong></p>
+<p>插入图片的语法和插入链接很像，就是在前面加了一个叹号!，注意：叹号是英文叹号。</p>
+<p>![百度搜索] (<a href="https://www.baidu.com/img/bd_logo1.png" target="_blank" rel="noopener">https://www.baidu.com/img/bd_logo1.png</a>)</p>
+<p>效果如下：</p>
+<p><img src="data:image/png;base64,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" alt="img"></p>
+<p><strong>列表</strong></p>
+<p>列表分为有序列表和无序列表，什么是有序列表呢？就是1、2、3顺序排开。</p>
+<p><strong>有序列表</strong></p>
+<p>语法如下，注意：数字后加点. 再空一格写内容。</p>
+<p>\1. 把冰箱门打开</p>
+<p>\2. 把大象放进去</p>
+<p>\3. 关上冰箱门</p>
+<p>效果如下：</p>
+<ol>
+<li>把冰箱门打开</li>
+<li>把大象放进去</li>
+<li>关上冰箱门</li>
+</ol>
+<p><strong>无序列表</strong></p>
+<p>无序列表只需要在文字前面加上减号-就行。（星号*或加号+也可以，看个人喜好，我比较喜欢用减号）</p>
+<p>- 把冰箱门打开</p>
+<p>- 把大象放进去</p>
+<p>- 关上冰箱门</p>
+<p>效果如下：</p>
+<ul>
+<li>把冰箱门打开</li>
+<li>把大象放进去</li>
+<li>关上冰箱门</li>
+</ul>
+<p><strong>其他标记</strong></p>
+<p><strong>换行</strong></p>
+<p>当你写大段文本分段的时候，只是回车换行是不行的，有些解释器出来的效果会让文字连在一起。</p>
+<p>段落与段落之间需要强制空一行才能分段。</p>
+<p><strong>分割线</strong></p>
+<p>你可以在一行中使用三个以上的星号*或减号-来创建分割线（注意：行内不能有其他东西）</p>
+<p>-—</p>
+<hr>
+<p>效果如下：</p>
+<hr>
+<hr>
+<p><strong>Markdown高级语法</strong></p>
+<p>还有一些不太常用的语法，比如插入代码区块、插入表格等等。</p>
+<p><strong>代码区块</strong></p>
+<p>如果你是一个程序员，需要分享自己的代码，那就需要创建代码区块，如果像普通的段落一样显示，格式可能会很糟糕。</p>
+<p>当然，把整块文本放区块里也很常见，比如本文的语法解释部分。</p>
+<p>语法：需要整体内容缩进 4 个空格或是 1 个制表符（tab）</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> <span class="built_in">Promise</span> = <span class="built_in">require</span>(<span class="string">'bluebird'</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> request = <span class="built_in">Promise</span>.promisify(<span class="built_in">require</span>(<span class="string">'request'</span>));</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> fs = <span class="built_in">require</span>(<span class="string">'fs'</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> cheerio = <span class="built_in">require</span>(<span class="string">'cheerio'</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> s = <span class="built_in">require</span>(<span class="string">"underscore.string"</span>);</span><br></pre></td></tr></table></figure>
+<p>或者使用另外一种写法，就是在代码前后位置加上三个反引号`（数字键盘1左边那个按键）</p>
+<p>如果是行内代码引用的话，只需要在代码前后加上一个反引号`。</p>
+<p>Use the <code>whoisyourdaddy()</code> function.</p>
+<p>效果如下：</p>
+<p>Use the <code>whoisyourdaddy()</code> function.</p>
+<p><strong>插入表格</strong></p>
+<p>Markdown插入表格的语法相对复杂，必须要按格式来敲，注意表头与内容的分割线横线-不能少于3个。</p>
+<p>第一格表头 | 第二格表头</p>
+<p>—- | —-</p>
+<p>内容单元格 第一列第一格 | 内容单元格第二列第一格</p>
+<p>内容单元格 第一列第二格 多加文字 | 内容单元格第二列第二格</p>
+<p>效果如下：</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>liuchanglin</span>
+                    </p>
+                
+                
+                
+                
+                     <p class="copyright-item">
+                         <span>Slogan:</span>
+                         <span><strong>我惭携宝剑，只为看山来.</strong></span>
+                     </p>
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tags/tools/"># tools</a>
+                    
+                        <a href="/tags/Markdown/"># Markdown</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2020/05/21/%E4%BD%BF%E7%94%A8hexo%E6%90%AD%E5%BB%BA%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2/">使用hexo搭建个人博客</a>
+            
+            
+            <a class="next" rel="next" href="/2020/04/26/hello-world/">Hello World</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+        </div>
+        <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© liuchanglin | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+</html>

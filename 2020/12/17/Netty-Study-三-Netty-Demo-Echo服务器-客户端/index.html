@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="liuchanglin">
+
+
+
+
+
+<title>Netty Study(三):Netty-Demo(Echo服务器&amp;客户端) | liuchanglin &#39;s blog</title>
+
+
+
+    <link rel="icon" href="/img.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+<body>
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">LiuChanglin&#39;s Blog</a></div>
+            <div class="menu navbar-right">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+                <input id="switch_default" type="checkbox" class="switch_default">
+                <label for="switch_default" class="toggleBtn"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">LiuChanglin&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if(toggleMenu.classList.contains("active")){
+           toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        }else{
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+        <div class="main">
+            <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    document.ready(
+        function () {
+            tocbot.init({
+                tocSelector: '.tocbot-list',
+                contentSelector: '.post-content',
+                headingSelector: 'h1, h2, h3, h4, h5',
+                collapseDepth: 1,
+                orderedList: false,
+                scrollSmooth: true,
+            })
+        }
+    )
+
+    function expand_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 6,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "collapse_toc()");
+        b.innerHTML = "Collapse all"
+    }
+
+    function collapse_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 1,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "expand_toc()");
+        b.innerHTML = "Expand all"
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">Netty Study(三):Netty-Demo(Echo服务器&amp;客户端)</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">liuchanglin</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">December 17, 2020&nbsp;&nbsp;23:25:49</a>
+                        </span>
+                    
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <h2 id="一、Netty服务器端"><a href="#一、Netty服务器端" class="headerlink" title="一、Netty服务器端"></a>一、Netty服务器端</h2><p>一个Netty服务器应该包含两个部分：</p>
+<ul>
+<li>ChannelHandler：实现服务器对客户端接收数据的处理，也就是业务逻辑；</li>
+<li>BootStrap： 服务器的启动部分，将服务器绑定到要监听连接请求到端口上；</li>
+</ul>
+<h3 id="1-ChannelHandler"><a href="#1-ChannelHandler" class="headerlink" title="#1 ChannelHandler"></a>#1 ChannelHandler</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@ChannelHandler</span>.Sharable	<span class="comment">//标示一个ChannelHandler可以被多个Channel共享</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">EchoServerHandler</span> <span class="keyword">extends</span> <span class="title">ChannelHandlerAdapter</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">channelRead</span><span class="params">(ChannelHandlerContext ctx, Object msg)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        ByteBuf in = (ByteBuf) msg;</span><br><span class="line">      <span class="comment">//	控制台打印消息记录</span></span><br><span class="line">      <span class="comment">//	将接收到的消息 写给发送者，而 不冲刷出站消息</span></span><br><span class="line">        System.out.println(<span class="string">"Server received: "</span> + in.toString(StandardCharsets.UTF_8));</span><br><span class="line">        ctx.write(in);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">channelReadComplete</span><span class="params">(ChannelHandlerContext ctx)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">      <span class="comment">//	将未决消息冲刷到 远程节点，并且关 闭该 Channel</span></span><br><span class="line">        ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">exceptionCaught</span><span class="params">(ChannelHandlerContext ctx, Throwable cause)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">      <span class="comment">//	捕获异常，关闭连接</span></span><br><span class="line">        cause.printStackTrace();</span><br><span class="line">        ctx.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>EchoServerHandler</code>实现了<code>ChannelHandlerAdapter</code>（Netty in action书中是选择实现的<code>ChannelInboundHandlerAdapter</code>， <strong>在Netty 5.0版本之后，为了精简handler类型继承关系</strong>，<code>ChannelInboundHandler</code>和<code>ChannelOutboundHandler</code>被合并成<code>ChannelHandler</code>。现在<code>ChannelHandler</code>中既有<strong>inbound handler函数</strong>也有<strong>outbound handler函数</strong>)，Handler实现的<code>ChannelHandlerAdapter</code>有很多可重写的方法，这些方法都挂勾到事件生命周期的恰当时间点上。</p>
+<p>关于<strong>异常捕获</strong>，如果ChannelPipline上的所有ChannelHandler都没有重写<code>exceptionCaught()</code>方法，那么所接收的一场会被传递到ChannelPipline的尾端并被记录。</p>
+<blockquote>
+<ul>
+<li>针对不同类型的事件来调用 ChannelHandler;</li>
+<li>应用程序通过实现或者扩展 ChannelHandler 来挂钩到事件的生命周期，并且提供自定义的应用程序逻辑;</li>
+<li>在架构上，ChannelHandler 有助于保持业务逻辑与网络处理代码的分离。这简化了开发过程，因为代码必须不断地演化以响应不断变化的需求。</li>
+</ul>
+</blockquote>
+<h3 id="2-ServerBootStrap"><a href="#2-ServerBootStrap" class="headerlink" title="#2 ServerBootStrap"></a>#2 ServerBootStrap</h3><p>引导服务器的具体作用主要是：</p>
+<ul>
+<li>绑定到服务器将在其上监听并接受传入连接请求的端口;</li>
+<li>配置 Channel，以将有关的入站消息通知给 Handler 实例。</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">EchoServer</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> port;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">EchoServer</span><span class="params">(<span class="keyword">int</span> port)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.port = port;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">      <span class="comment">//	设置绑定端口</span></span><br><span class="line">        <span class="keyword">if</span> (args.length != <span class="number">1</span>) &#123;</span><br><span class="line">            System.err.println("Usage: " + EchoServer.class.getSimpleName() + " &lt;port&gt;");</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> port = Integer.parseInt(args[<span class="number">0</span>]);</span><br><span class="line">            <span class="keyword">new</span> EchoServer(port).start(); <span class="comment">//	启动服务器</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> EchoServerHandler serverHandler = <span class="keyword">new</span> EchoServerHandler();</span><br><span class="line">        EventLoopGroup group = <span class="keyword">new</span> NioEventLoopGroup(); <span class="comment">// 创建EventLoop</span></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            ServerBootstrap serverBootstrap = <span class="keyword">new</span> ServerBootstrap(); <span class="comment">//	创建BootStrap 引导</span></span><br><span class="line">            serverBootstrap.group(group)</span><br><span class="line">                    .channel(NioServerSocketChannel<span class="class">.<span class="keyword">class</span>) //	指定<span class="title">Nio</span>传输<span class="title">Channel</span></span></span><br><span class="line"><span class="class">                    .<span class="title">localAddress</span>(<span class="title">new</span> <span class="title">InetSocketAddress</span>(<span class="title">port</span>))// 指定<span class="title">socket</span>地址</span></span><br><span class="line"><span class="class">                    .<span class="title">childHandler</span>(<span class="title">new</span> <span class="title">ChannelInitializer</span>&lt;<span class="title">SocketChannel</span>&gt;() </span>&#123; <span class="comment">//ChannelInitializer</span></span><br><span class="line">                        <span class="meta">@Override</span></span><br><span class="line">                        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">initChannel</span><span class="params">(SocketChannel socketChannel)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">                            socketChannel.pipeline().addLast(serverHandler);</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;);</span><br><span class="line">            ChannelFuture channelFuture = serverBootstrap.bind().sync(); <span class="comment">//真正的绑定服务器</span></span><br><span class="line">            channelFuture.channel().closeFuture().sync();<span class="comment">//直到服务器channel关闭，才会退出当前线程</span></span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            group.shutdownGracefully().sync(); <span class="comment">//关闭并释放所有资源</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>Channel、EventLoop两者相互配合实现基本的套接字操作</strong>，这里通过<code>ServerBootstrap</code>引导将其整合起来，channel()方法指定了NIO传输Channel，接着绑定本地端口（<code>InetSocketAddress</code>）。</p>
+<p>通过<code>ChannelInitializer</code>在新链接接受时，创建新的子Channel，之后ChannelInitializer再会把已经定义好的serverHandler添加到pipline里。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ChannelFuture channelFuture = serverBootstrap.bind().sync(); <span class="comment">//真正的绑定服务器</span></span><br><span class="line">channelFuture.channel().closeFuture().sync();<span class="comment">//直到服务器channel关闭，才会退出当前线程</span></span><br></pre></td></tr></table></figure>
+<p>上面的<strong>第一行代码是服务器去绑定指定好的端口，使用sync()阻塞当前线程，直到绑定操作完成</strong>。<strong>第二行代码是阻塞等待直到服务器的所有Channel关闭</strong>，这里也就是保证了绑定好了端口之后不会执行finally代码块里的方法，导致整个Netty服务器关闭。这样就可以监听关闭事件，然后进行shutdownGracefully优雅关闭。</p>
+<h2 id="二、Netty客户端"><a href="#二、Netty客户端" class="headerlink" title="二、Netty客户端"></a>二、Netty客户端</h2><h3 id="1-ChannelHandler-1"><a href="#1-ChannelHandler-1" class="headerlink" title="#1 ChannelHandler"></a>#1 ChannelHandler</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">EchoClientHandler</span> <span class="keyword">extends</span> <span class="title">SimpleChannelInboundHandler</span>&lt;<span class="title">ByteBuf</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">channelActive</span><span class="params">(ChannelHandlerContext ctx)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        ctx.writeAndFlush(Unpooled.copiedBuffer(<span class="string">"Netty rocks!"</span>, CharsetUtil.UTF_8));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">channelRead</span><span class="params">(ChannelHandlerContext ctx, Object msg)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        ByteBuf in = (ByteBuf) msg;</span><br><span class="line">        System.out.println(<span class="string">"Client received: "</span> + in.toString(StandardCharsets.UTF_8));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">exceptionCaught</span><span class="params">(ChannelHandlerContext ctx, Throwable cause)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        cause.printStackTrace();</span><br><span class="line">        ctx.close();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">messageReceived</span><span class="params">(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里主要重写了三个方法，第一个<code>channelActive()</code>方法，这个方法会在一个链接调用的时候调用，这里编码了一个字符串“Netty rocks”字符串的Buffer，将其写入服务器（writeAndFlush）；</p>
+<p>然后重写了<code>channelRead()</code>方法。接收数据时回调用这个方法，但是这里的接收可能不是一次性接收的，服务器发出来的消息可能进行分块接收，即使是几个字节很少量的数据，这个方法也可能调用两次，作为一个面向流的协议，TCP保证数组会按照服务器发送它的顺序去接收它。</p>
+<p>第三个方法就是<code>exceptionCaught()</code>，和服务器端的一样，记录Throwable，关闭channel。</p>
+<h3 id="2-BootStrap"><a href="#2-BootStrap" class="headerlink" title="#2 BootStrap"></a>#2 BootStrap</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">EchoClient</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> String host;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> port;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">EchoClient</span><span class="params">(String host, <span class="keyword">int</span> port)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.host = host;</span><br><span class="line">        <span class="keyword">this</span>.port = port;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        EventLoopGroup group = <span class="keyword">new</span> NioEventLoopGroup();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Bootstrap bootstrap = <span class="keyword">new</span> Bootstrap();</span><br><span class="line">            bootstrap.group(group)</span><br><span class="line">                    .channel(NioSocketChannel<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">                    .<span class="title">remoteAddress</span>(<span class="title">new</span> <span class="title">InetSocketAddress</span>(<span class="title">host</span>, <span class="title">port</span>))</span></span><br><span class="line"><span class="class">                    .<span class="title">handler</span>(<span class="title">new</span> <span class="title">ChannelInitializer</span>&lt;<span class="title">SocketChannel</span>&gt;() </span>&#123;</span><br><span class="line">                        <span class="meta">@Override</span></span><br><span class="line">                        <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">initChannel</span><span class="params">(SocketChannel socketChannel)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">                            socketChannel.pipeline().addLast(<span class="keyword">new</span> EchoClientHandler());</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;);</span><br><span class="line">            ChannelFuture future = bootstrap.connect().sync();</span><br><span class="line">            future.channel().closeFuture().sync();</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            group.shutdownGracefully().sync();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (args.length != <span class="number">2</span>) &#123;</span><br><span class="line">            System.err.println(</span><br><span class="line">                    <span class="string">"Usage: "</span> + EchoClient<span class="class">.<span class="keyword">class</span>.<span class="title">getSimpleName</span>() +</span></span><br><span class="line">                            "&lt;host&gt; &lt;post&gt;"</span><br><span class="line">            );</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        String host = args[<span class="number">0</span>];</span><br><span class="line">        <span class="keyword">int</span> port = Integer.parseInt(args[<span class="number">1</span>]);</span><br><span class="line">        <span class="keyword">new</span> EchoClient(host, port).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>客户端的引导，类比服务器大部分一致，需要区别的地方主要在于：</p>
+<ul>
+<li>服务端使用的引导和客户端使用的引导类分别是ServerBootstrap和Bootstrap；</li>
+<li>虽然上面代码指定的Channel是和服务端一样的NIO传输，但是其实可以在客户端上使用其他类型的传输方式 </li>
+</ul>
+<p>构建、运行、服务端和客户端分别打印对应发出或者收到的语句。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>liuchanglin</span>
+                    </p>
+                
+                
+                
+                
+                     <p class="copyright-item">
+                         <span>Slogan:</span>
+                         <span><strong>我惭携宝剑，只为看山来.</strong></span>
+                     </p>
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tags/Java/"># Java</a>
+                    
+                        <a href="/tags/Netty/"># Netty</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2021/02/15/workReview-%E6%96%B0%E6%9C%8D%E5%8A%A1%E7%9A%84%E5%88%9B%E5%BB%BA-%E9%83%A8%E7%BD%B2-%E5%BC%80%E5%8F%91/">workReview:新服务的创建&部署&开发</a>
+            
+            
+            <a class="next" rel="next" href="/2020/12/17/Netty-Study-%E4%BA%8C-Netty%E7%BB%84%E4%BB%B6/">Netty Study(二):Netty组件</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+        </div>
+        <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© liuchanglin | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+</html>
