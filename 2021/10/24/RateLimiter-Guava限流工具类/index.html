@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="liuchanglin">
+
+
+
+
+
+<title>RateLimiter Guava限流工具类 | liuchanglin &#39;s blog</title>
+
+
+
+    <link rel="icon" href="/img.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+<body>
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">LiuChanglin&#39;s Blog</a></div>
+            <div class="menu navbar-right">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+                <input id="switch_default" type="checkbox" class="switch_default">
+                <label for="switch_default" class="toggleBtn"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">LiuChanglin&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if(toggleMenu.classList.contains("active")){
+           toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        }else{
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+        <div class="main">
+            <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    document.ready(
+        function () {
+            tocbot.init({
+                tocSelector: '.tocbot-list',
+                contentSelector: '.post-content',
+                headingSelector: 'h1, h2, h3, h4, h5',
+                collapseDepth: 1,
+                orderedList: false,
+                scrollSmooth: true,
+            })
+        }
+    )
+
+    function expand_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 6,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "collapse_toc()");
+        b.innerHTML = "Collapse all"
+    }
+
+    function collapse_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 1,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "expand_toc()");
+        b.innerHTML = "Expand all"
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">RateLimiter Guava限流工具类</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">liuchanglin</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">October 24, 2021&nbsp;&nbsp;18:25:37</a>
+                        </span>
+                    
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <h2 id="一、限流"><a href="#一、限流" class="headerlink" title="一、限流"></a>一、限流</h2><p>​    限流是保护高并发系统的三把利器之一，另外两个是缓存和降级。限流在很多场景中用来限制并发和请求量，比如说秒杀抢购，保护自身系统和下游系统不被巨型流量冲垮等。<strong>服务降级、熔断本身也是限流的一种</strong></p>
+<p>​    限流的目的是通过对并发访问/请求进行限速或者一个时间窗口内的的请求进行限速来保护系统，一旦达到限制速率则可以拒绝服务或进行流量整形。</p>
+<p>​    常用的限流方式和场景有：限制总并发数（比如数据库连接池、线程池）、限制瞬时并发数（如nginx的limit<em>conn模块，用来限制瞬时并发连接数，Java的Semaphore也可以实现）、限制时间窗口内的平均速率（如Guava的RateLimiter、nginx的limit</em>req模块，限制每秒的平均速率）；其他还有如限制远程接口调用速率、限制MQ的消费速率。另外还可以根据网络连接数、网络流量、CPU或内存负载等来限流。</p>
+<h2 id="二、限流基础算法"><a href="#二、限流基础算法" class="headerlink" title="二、限流基础算法"></a>二、限流基础算法</h2><p>​    限流基础算法有两种：令牌桶算法、漏桶算法</p>
+<h3 id="1-漏桶算法"><a href="#1-漏桶算法" class="headerlink" title="1)漏桶算法"></a>1)漏桶算法</h3><p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/801753-20190824212037987-415810352.png" alt="801753-20190824212037987-415810352"></p>
+<p>​    漏桶算法可以强制的<strong>限制数据的传输速率</strong>。漏桶算法原理为将请求先进入到一个漏桶里，然后人为设置一个最大的出水速率，保证漏桶的出水速率小于等于设置过的出水速率，当水流过大的时候就会直接溢出，也就是采取拒绝策略。漏桶算法的实现往往依赖于<strong>队列</strong>，请求到达如果队列未满则直接放入队列，然后有一个处理器按照固定频率从队列头取出请求进行处理。如果请求量大，则会导致队列满，那么新来的请求就会被抛弃。</p>
+<p>​    算法的大致流程就是：</p>
+<ul>
+<li>存下请求</li>
+<li>匀速处理</li>
+<li>多余丢弃</li>
+</ul>
+<p>漏桶算法的缺点十分明显，因为漏桶算法是一种强制限制请求速率的方式，所以它无法处理<strong>突发的大流量</strong>，网络请求中突然激增的流量是十分常见的，而漏桶算法的策略可能是直接将请求丢弃，这是十分不合理的。</p>
+<h3 id="2-令牌桶算法"><a href="#2-令牌桶算法" class="headerlink" title="2)令牌桶算法"></a>2)令牌桶算法</h3><p>​    令牌桶算法是网络流量整形（Traffic Shaping）和限流（Rate Limiting）中最常使用的一种算法，它可用于控制发送到网络上数据的数量并允许突发数据的发送。</p>
+<p>​    令牌桶算法是对漏桶算法的一种改进；</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/081226107372877.png" alt="img"></p>
+<p>​    令牌桶的处理过程大概是：</p>
+<ul>
+<li>系统固定速率产生令牌，然后将令牌放入令牌桶中</li>
+<li>令牌桶有固定容量，令牌桶满了，再产生的令牌就会被丢弃</li>
+<li>每次发生请求，都会从令牌桶中获取一个令牌，如果取到，请求通过；如果没取到，那么就拒绝请求</li>
+</ul>
+<p>​    令牌桶算法可以在一定程度上防止突发流量(<strong>平滑流出速率</strong>)。假设我们想要的速率是1000QPS，那么往桶中放令牌的速度就是1000个/s，假设第1秒只有800个请求，那意味着第2秒可以容许1200个请求，这就是<strong>一定程度</strong>突发流量的意思，反之我们看漏桶算法，第一秒只有800个请求，那么全部放过，第二秒这1200个请求将会被打回200个。（是在设置桶中令牌上限满足的情况下）</p>
+<h2 id="三、RateLimiter"><a href="#三、RateLimiter" class="headerlink" title="三、RateLimiter"></a>三、RateLimiter</h2><h3 id="1、SmoothBursty-平滑突发限流"><a href="#1、SmoothBursty-平滑突发限流" class="headerlink" title="1、SmoothBursty 平滑突发限流"></a>1、SmoothBursty 平滑突发限流</h3><p>一段代码示例，令牌桶中放置5个令牌，模拟每秒最多5个请求：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> liuchanglin</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@version</span> 1.0</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@ClassName</span>: LimiterTest</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@date</span> 2021/10/25 1:11 上午</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LimiterTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> SimpleDateFormat FORMATTER = <span class="keyword">new</span> SimpleDateFormat(<span class="string">"yyyy-MM-dd HH:mm:ss"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> THREAD_COUNT = <span class="number">25</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">testRateLimiter</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        RateLimiter rateLimiter = RateLimiter.create(<span class="number">5</span>);</span><br><span class="line"></span><br><span class="line">        Thread[] ts = <span class="keyword">new</span> Thread[THREAD_COUNT];</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; THREAD_COUNT; i++) &#123;</span><br><span class="line">            ts[i] = <span class="keyword">new</span> Thread(<span class="keyword">new</span> RateLimiterThread(rateLimiter), <span class="string">"RateLimiterThread-"</span> + i);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; THREAD_COUNT; i++) &#123;</span><br><span class="line">            ts[i].start();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">RateLimiterThread</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">final</span> RateLimiter rateLimiter;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="title">RateLimiterThread</span><span class="params">(RateLimiter rateLimiter)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">this</span>.rateLimiter = rateLimiter;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            rateLimiter.acquire(<span class="number">1</span>);</span><br><span class="line">            System.out.println(Thread.currentThread().getName() </span><br><span class="line">                               + <span class="string">"获取到了令牌，时间 = "</span> + FORMATTER.format(<span class="keyword">new</span> Date()));</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        testRateLimiter();</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>代码运行结果：</p>
+<blockquote>
+<p>RateLimiterThread-0获取到了令牌，时间 = 2021-10-25 01:23:23<br>RateLimiterThread-15获取到了令牌，时间 = 2021-10-25 01:23:23<br>RateLimiterThread-16获取到了令牌，时间 = 2021-10-25 01:23:23<br>RateLimiterThread-14获取到了令牌，时间 = 2021-10-25 01:23:23<br>RateLimiterThread-13获取到了令牌，时间 = 2021-10-25 01:23:24<br>RateLimiterThread-12获取到了令牌，时间 = 2021-10-25 01:23:24<br>RateLimiterThread-11获取到了令牌，时间 = 2021-10-25 01:23:24<br>RateLimiterThread-17获取到了令牌，时间 = 2021-10-25 01:23:24<br>RateLimiterThread-18获取到了令牌，时间 = 2021-10-25 01:23:24<br>RateLimiterThread-10获取到了令牌，时间 = 2021-10-25 01:23:25<br>RateLimiterThread-9获取到了令牌，时间 = 2021-10-25 01:23:25<br>RateLimiterThread-8获取到了令牌，时间 = 2021-10-25 01:23:25<br>RateLimiterThread-7获取到了令牌，时间 = 2021-10-25 01:23:25<br>RateLimiterThread-6获取到了令牌，时间 = 2021-10-25 01:23:25<br>RateLimiterThread-5获取到了令牌，时间 = 2021-10-25 01:23:26<br>RateLimiterThread-4获取到了令牌，时间 = 2021-10-25 01:23:26<br>RateLimiterThread-3获取到了令牌，时间 = 2021-10-25 01:23:26<br>RateLimiterThread-19获取到了令牌，时间 = 2021-10-25 01:23:26<br>RateLimiterThread-2获取到了令牌，时间 = 2021-10-25 01:23:26<br>RateLimiterThread-1获取到了令牌，时间 = 2021-10-25 01:23:27<br>RateLimiterThread-20获取到了令牌，时间 = 2021-10-25 01:23:27<br>RateLimiterThread-21获取到了令牌，时间 = 2021-10-25 01:23:27<br>RateLimiterThread-22获取到了令牌，时间 = 2021-10-25 01:23:27<br>RateLimiterThread-23获取到了令牌，时间 = 2021-10-25 01:23:27<br>RateLimiterThread-24获取到了令牌，时间 = 2021-10-25 01:23:28</p>
+</blockquote>
+<p>可以看到，每秒只有5个线程可以取到令牌。</p>
+<ul>
+<li>acquire会阻塞线程直到线程获取到令牌，返回值是一个double类型，表示从开始阻塞到获取到令牌的时间，单位为秒；</li>
+<li>tryAquire可以指定超时时间，返回值为boolean类型；</li>
+</ul>
+<h3 id="RateLimiter-预消费"><a href="#RateLimiter-预消费" class="headerlink" title="RateLimiter 预消费"></a>RateLimiter 预消费</h3><p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20211025021453432.png" alt="image-20211025021453432"></p>
+<p>acquire方法有一个参数为permits的重载方法，它可以允许一次指定多个令牌数  </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">testRateLimiterPermits</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    RateLimiter rateLimiter = RateLimiter.create(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">    System.out.println(<span class="string">"获取1个令牌开始，时间为"</span> + FORMATTER.format(<span class="keyword">new</span> Date()));</span><br><span class="line">    <span class="keyword">double</span> cost = rateLimiter.acquire(<span class="number">1</span>);</span><br><span class="line">    System.out.println(<span class="string">"获取1个令牌结束，时间为"</span> + FORMATTER.format(<span class="keyword">new</span> Date()) + <span class="string">", 耗时"</span> + cost + <span class="string">"ms"</span>);</span><br><span class="line">    System.out.println(<span class="string">"获取5个令牌开始，时间为"</span> + FORMATTER.format(<span class="keyword">new</span> Date()));</span><br><span class="line">    cost = rateLimiter.acquire(<span class="number">5</span>);</span><br><span class="line">    System.out.println(<span class="string">"获取5个令牌结束，时间为"</span> + FORMATTER.format(<span class="keyword">new</span> Date()) + <span class="string">", 耗时"</span> + cost + <span class="string">"ms"</span>);</span><br><span class="line">    System.out.println(<span class="string">"获取3个令牌开始，时间为"</span> + FORMATTER.format(<span class="keyword">new</span> Date()));</span><br><span class="line">    cost = rateLimiter.acquire(<span class="number">3</span>);</span><br><span class="line">    System.out.println(<span class="string">"获取3个令牌结束，时间为"</span> + FORMATTER.format(<span class="keyword">new</span> Date()) + <span class="string">", 耗时"</span> + cost + <span class="string">"ms"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>代码输出结果👇🏻</p>
+<blockquote>
+<p>获取1个令牌开始，时间为2021-10-25 02:16:57<br>获取1个令牌结束，时间为2021-10-25 02:16:57, 耗时0.0ms<br>获取5个令牌开始，时间为2021-10-25 02:16:57<br>获取5个令牌结束，时间为2021-10-25 02:16:58, 耗时0.996506ms<br>获取3个令牌开始，时间为2021-10-25 02:16:58<br>获取3个令牌结束，时间为2021-10-25 02:17:03, 耗时4.994537ms</p>
+</blockquote>
+<p>从结果上看，如果请求的数量大于防止令牌的数量，那么这是可以允许处理的，但是影响就是后续的请求就要延后处理。</p>
+<h3 id="2、SmoothWarmingUp-平滑预热限流"><a href="#2、SmoothWarmingUp-平滑预热限流" class="headerlink" title="2、SmoothWarmingUp 平滑预热限流"></a>2、SmoothWarmingUp 平滑预热限流</h3><p>RateLimiter 还具有平滑预热限流的使用方式，通过<code>create</code>方法中的参数配置，可以指定RateLimiter的一段预热时间👇：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">testSmoothWarmingUp</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  			<span class="comment">// 这里是指每秒2个令牌 3秒预热时间</span></span><br><span class="line">        RateLimiter r = RateLimiter.create(<span class="number">2</span>, <span class="number">3</span>, TimeUnit.SECONDS);</span><br><span class="line">        <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">            System.out.println(<span class="string">"get 1 tokens: "</span> + r.acquire(<span class="number">1</span>) + <span class="string">"s"</span>);</span><br><span class="line">            System.out.println(<span class="string">"get 1 tokens: "</span> + r.acquire(<span class="number">1</span>) + <span class="string">"s"</span>);</span><br><span class="line">            System.out.println(<span class="string">"get 1 tokens: "</span> + r.acquire(<span class="number">1</span>) + <span class="string">"s"</span>);</span><br><span class="line">            System.out.println(<span class="string">"get 1 tokens: "</span> + r.acquire(<span class="number">1</span>) + <span class="string">"s"</span>);</span><br><span class="line">            System.out.println(<span class="string">"end"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>这段代码的运行结果如下：</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20220203173304426.png" alt="image-20220203173304426" style="zoom:50%;" /></p>
+<p>​    我们可以看到前三次令牌的获取就耗时了总共约3s的时间，这代表RateLimiter在前三秒处于预热状态，并不是一开始我们期望的每秒2个令牌的速率。</p>
+<p>​    平滑预热限流适用于资源需要预热的场景，比如服务启动时数据库连接还没有加载完成，这个情况下如果大批量的请求进入就会给服务带来不必要的压力，一个预热的限流就可以避免这样的问题发生。</p>
+<h3 id="RateLimiter的限制"><a href="#RateLimiter的限制" class="headerlink" title="RateLimiter的限制"></a>RateLimiter的限制</h3><p>​    RateLimiter 是单机的如果需要对集群进行限流，就需要借助于Redis、sentinel等来实现；</p>
+<h2 id="四、源码"><a href="#四、源码" class="headerlink" title="四、源码"></a>四、源码</h2><p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20211025023935179.png" alt="image-20211025023935179" style="zoom:50%;" /></p>
+<p>首先作为抽象父类的<code>RateLimiter</code>只有两个属性：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> RateLimiter.SleepingStopwatch stopwatch;</span><br><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">volatile</span> Object mutexDoNotUseDirectly;</span><br></pre></td></tr></table></figure>
+<p>​    这两个属性中的 stopwatch用于 计时 ，其他逻辑中关于时间的计算基本上都是由它来完成的，另外一个mutexDoNotUserDirectly用来做锁，RateLimiter 依赖于 synchronized 来控制并发，各个属性甚至都没有用 volatile 修饰。    </p>
+<p>​    之后在<code>SmoothRateLimiter</code>中负责实现大部分方法和逻辑，它的属性如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//SmoothRateLimiter.java</span></span><br><span class="line"><span class="comment">//当前存储令牌数</span></span><br><span class="line"><span class="keyword">double</span> storedPermits;</span><br><span class="line"><span class="comment">//最大存储令牌数</span></span><br><span class="line"><span class="keyword">double</span> maxPermits;</span><br><span class="line"><span class="comment">//添加令牌时间间隔</span></span><br><span class="line"><span class="keyword">double</span> stableIntervalMicros;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 下一次请求可以获取令牌的起始时间</span></span><br><span class="line"><span class="comment"> * 由于RateLimiter允许预消费，上次请求预消费令牌后</span></span><br><span class="line"><span class="comment"> * 下次请求需要等待相应的时间到nextFreeTicketMicros时刻才可以获取令牌</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">long</span> nextFreeTicketMicros = <span class="number">0L</span>;</span><br></pre></td></tr></table></figure>
+<h3 id="1、平滑突发限流-SmoothBursty-分析"><a href="#1、平滑突发限流-SmoothBursty-分析" class="headerlink" title="1、平滑突发限流 SmoothBursty 分析"></a>1、平滑突发限流 SmoothBursty 分析</h3><p>​    首先是平滑突发限流的<code>RateLimiter</code>的构造方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> RateLimiter <span class="title">create</span><span class="params">(<span class="keyword">double</span> permitsPerSecond)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> create(permitsPerSecond, RateLimiter.SleepingStopwatch.createFromSystemTimer());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@VisibleForTesting</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> RateLimiter <span class="title">create</span><span class="params">(<span class="keyword">double</span> permitsPerSecond, RateLimiter.SleepingStopwatch stopwatch)</span> </span>&#123;</span><br><span class="line">    RateLimiter rateLimiter = <span class="keyword">new</span> SmoothBursty(stopwatch, <span class="number">1.0</span>D <span class="comment">/* maxBurstSeconds */</span>);</span><br><span class="line">    rateLimiter.setRate(permitsPerSecond); <span class="comment">// setRate</span></span><br><span class="line">    <span class="keyword">return</span> rateLimiter;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>​    可以看到平滑突发限流就是对子类SmoothBursty的实现</p>
+<p>​    SmoothBursty 有一个属性：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 构造函数指定了 maxBurstSeconds 为 1.0，也就是说，最多会缓存 1 秒钟，</span></span><br><span class="line"><span class="comment"> * 也就是 (1.0 * permitsPerSecond) 这么多个 permits 到池中。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">final</span> <span class="keyword">double</span> maxBurstSeconds;</span><br></pre></td></tr></table></figure>
+<p>​    这个属性在<code>create</code>方法中已经被指定为1；</p>
+<p>​    接下来看<code>setRate</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//pulic 方法</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">setRate</span><span class="params">(<span class="keyword">double</span> permitsPerSecond)</span> </span>&#123;</span><br><span class="line">        Preconditions.checkArgument(permitsPerSecond &gt; <span class="number">0.0</span>D &amp;&amp; !Double.isNaN(permitsPerSecond), <span class="string">"rate must be positive"</span>);</span><br><span class="line">        <span class="keyword">synchronized</span>(<span class="keyword">this</span>.mutex()) &#123;</span><br><span class="line">            <span class="keyword">this</span>.doSetRate(permitsPerSecond, <span class="keyword">this</span>.stopwatch.readMicros());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">final</span> <span class="keyword">void</span> <span class="title">doSetRate</span><span class="params">(<span class="keyword">double</span> permitsPerSecond, <span class="keyword">long</span> nowMicros)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.resync(nowMicros);</span><br><span class="line">        <span class="keyword">double</span> stableIntervalMicros = (<span class="keyword">double</span>)TimeUnit.SECONDS.toMicros(<span class="number">1L</span>) / permitsPerSecond;</span><br><span class="line">        <span class="keyword">this</span>.stableIntervalMicros = stableIntervalMicros;</span><br><span class="line">        <span class="keyword">this</span>.doSetRate(permitsPerSecond, stableIntervalMicros);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>​    setRate首先进行了参数的校验，然后这里的<code>resync</code>方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">resync</span><span class="params">(<span class="keyword">long</span> nowMicros)</span> </span>&#123;</span><br><span class="line">       <span class="keyword">if</span> (nowMicros &gt; <span class="keyword">this</span>.nextFreeTicketMicros) &#123;</span><br><span class="line">         <span class="comment">// coolDownIntervalMicros 这里的这个方法返回的就是添加令牌时间间隔</span></span><br><span class="line">           <span class="keyword">double</span> newPermits = (<span class="keyword">double</span>)(nowMicros - <span class="keyword">this</span>.nextFreeTicketMicros) / <span class="keyword">this</span>.coolDownIntervalMicros();</span><br><span class="line">           <span class="keyword">this</span>.storedPermits = Math.min(<span class="keyword">this</span>.maxPermits, <span class="keyword">this</span>.storedPermits + newPermits);</span><br><span class="line">           <span class="keyword">this</span>.nextFreeTicketMicros = nowMicros;</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+<p>resync方法就是将当前时间作为参数，判断当前时间是否大于‘下次可以获取令牌‘的时间，通过这种方式来重新刷新令牌池中可供使用的令牌数量，</p>
+<blockquote>
+<p>在 SmoothBursty 类中的实现是直接返回了 stableIntervalMicros 的值，也就是我们说的，每产生一个 permit 的时间长度。</p>
+<p>在构造方法中调用的resync 此时的 stableIntervalMicros 其实没有设置，也就是说，上面发生了一次除以 0 值的操作，得到的 newPermits 其实是一个无穷大。而 maxPermits 此时还是 0 值，不过这里其实没有关系。</p>
+</blockquote>
+<p>resync方法执行完成后，对<code>stableIntervalMicros</code>进行了赋值，这里又进行了一次setRate：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">doSetRate</span><span class="params">(<span class="keyword">double</span> permitsPerSecond, <span class="keyword">double</span> stableIntervalMicros)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">double</span> oldMaxPermits = <span class="keyword">this</span>.maxPermits;</span><br><span class="line">    <span class="keyword">this</span>.maxPermits = <span class="keyword">this</span>.maxBurstSeconds * permitsPerSecond;</span><br><span class="line">    <span class="keyword">if</span> (oldMaxPermits == <span class="number">1.0</span>D / <span class="number">0.0</span>) &#123;</span><br><span class="line">        <span class="keyword">this</span>.storedPermits = <span class="keyword">this</span>.maxPermits;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">this</span>.storedPermits = oldMaxPermits == <span class="number">0.0</span>D ? <span class="number">0.0</span>D : <span class="keyword">this</span>.storedPermits * <span class="keyword">this</span>.maxPermits / oldMaxPermits;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>​    因为setRate是一个public方法，所以在RateLimiter创建初始化之后也可以通过这个方法来动态的调整它的速率，这部分初始化了maxPermits参数，并且也对storedPermits参数进行了调整，可以看到调用一次setRate对于 maxPermits 来说，是重新计算，而对于 storedPermits 来说，是做等比例的缩放。</p>
+<p>​    初始化的代码基本到此就结束了，接下来是acquire部分，RateLimiter是怎样通过计算时间的方式来提供一个有效的令牌的；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@CanIgnoreReturnValue</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">double</span> <span class="title">acquire</span><span class="params">()</span> </span>&#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">this</span>.acquire(<span class="number">1</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@CanIgnoreReturnValue</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">double</span> <span class="title">acquire</span><span class="params">(<span class="keyword">int</span> permits)</span> </span>&#123;</span><br><span class="line">    	<span class="comment">// 计算需要sleep等待的时间</span></span><br><span class="line">      <span class="keyword">long</span> microsToWait = <span class="keyword">this</span>.reserve(permits);</span><br><span class="line">     <span class="comment">// sleep</span></span><br><span class="line">      <span class="keyword">this</span>.stopwatch.sleepMicrosUninterruptibly(microsToWait);</span><br><span class="line">    	<span class="comment">// 返回sleep的时间</span></span><br><span class="line">      <span class="keyword">return</span> <span class="number">1.0</span>D * (<span class="keyword">double</span>)microsToWait / (<span class="keyword">double</span>)TimeUnit.SECONDS.toMicros(<span class="number">1L</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 计算需要sleep等待的时间</span></span><br><span class="line"><span class="function"><span class="keyword">final</span> <span class="keyword">long</span> <span class="title">reserve</span><span class="params">(<span class="keyword">int</span> permits)</span> </span>&#123;</span><br><span class="line">      checkPermits(permits); <span class="comment">// 检查是否是一个有效的permits参数</span></span><br><span class="line">      <span class="keyword">synchronized</span>(<span class="keyword">this</span>.mutex()) &#123;</span><br><span class="line">          <span class="keyword">return</span> <span class="keyword">this</span>.reserveAndGetWaitLength(permits, <span class="keyword">this</span>.stopwatch.readMicros());</span><br><span class="line">      &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">final</span> <span class="keyword">long</span> <span class="title">reserveAndGetWaitLength</span><span class="params">(<span class="keyword">int</span> permits, <span class="keyword">long</span> nowMicros)</span> </span>&#123;</span><br><span class="line">      <span class="keyword">long</span> momentAvailable = <span class="keyword">this</span>.reserveEarliestAvailable(permits, nowMicros);</span><br><span class="line">      <span class="keyword">return</span> Math.max(momentAvailable - nowMicros, <span class="number">0L</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">final</span> <span class="keyword">long</span> <span class="title">reserveEarliestAvailable</span><span class="params">(<span class="keyword">int</span> requiredPermits, <span class="keyword">long</span> nowMicros)</span> </span>&#123;</span><br><span class="line">      <span class="keyword">this</span>.resync(nowMicros); <span class="comment">// 刷新令牌池</span></span><br><span class="line">      <span class="keyword">long</span> returnValue = <span class="keyword">this</span>.nextFreeTicketMicros; <span class="comment">// 下次可以取到令牌的时间</span></span><br><span class="line">    	<span class="comment">// 计算在当前令牌池中需要使用的令牌数量[请求的令牌数可能大于当前令牌池中的有效令牌数，预消费逻辑]</span></span><br><span class="line">      <span class="keyword">double</span> storedPermitsToSpend = Math.min((<span class="keyword">double</span>)requiredPermits, <span class="keyword">this</span>.storedPermits);</span><br><span class="line">    	<span class="comment">// 计算预消费中不够的部分</span></span><br><span class="line">      <span class="keyword">double</span> freshPermits = (<span class="keyword">double</span>)requiredPermits - storedPermitsToSpend;</span><br><span class="line">      <span class="comment">// storedPermitsToWaitTime 在平滑突发限流模式中默认返回为0</span></span><br><span class="line">    	<span class="comment">// 计算总共需要等待的时间</span></span><br><span class="line">      <span class="keyword">long</span> waitMicros = <span class="keyword">this</span>.storedPermitsToWaitTime(<span class="keyword">this</span>.storedPermits, storedPermitsToSpend) + (<span class="keyword">long</span>)(freshPermits * <span class="keyword">this</span>.stableIntervalMicros);</span><br><span class="line">    	<span class="comment">// 计算下次有有效令牌的具体时间，重新更新nextFreeTicketMicros</span></span><br><span class="line">      <span class="keyword">this</span>.nextFreeTicketMicros = LongMath.saturatedAdd(<span class="keyword">this</span>.nextFreeTicketMicros, waitMicros);</span><br><span class="line">      <span class="keyword">this</span>.storedPermits -= storedPermitsToSpend;</span><br><span class="line">      <span class="keyword">return</span> returnValue;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>​    返回值是 nextFreeTicketMicros 的旧值，因为只要到这个时间点，就说明当次 acquire 可以成功返回了，而不管 storedPermits 够不够。如果 storedPermits 不够，会将 nextFreeTicketMicros 往前推一定的时间，预占了一定的量。</p>
+<h3 id="2、平滑预热限流-SmoothWarmingUp-分析"><a href="#2、平滑预热限流-SmoothWarmingUp-分析" class="headerlink" title="2、平滑预热限流 SmoothWarmingUp 分析"></a>2、平滑预热限流 SmoothWarmingUp 分析</h3><p>​    <img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/format,png.png" alt="img"></p>
+<p><em>X 轴代表 storedPermits 的数量，Y 轴代表获取一个 permits 需要的时间</em></p>
+<blockquote>
+<p>  假设指定 permitsPerSecond 为 10，那么 stableInterval 为 100ms，而 coldInterval 是 3 倍，也就是 300ms（coldFactor，3 倍是写死的，用户不能修改）。也就是说，当达到 maxPermits 时，此时处于系统最冷的时候，获取一个 permit 需要 300ms，而如果 storedPermits 小于 thresholdPermits 的时候，只需要 100ms。</p>
+</blockquote>
+<p>如图中所示，图中梯形所处的区域就代表预热时间，预热期间内获取一个permits的时间会相比于正常时间的stable interval要长，随着服务的启动获取permits的时间会趋于稳定。</p>
+<ul>
+<li>当系统在非常繁忙的时候，这条线停留在 x=0 处，此时 storedPermits 为 0</li>
+<li>当 limiter 没有被使用的时候，这条线慢慢往右移动，直到 x=maxPermits 处；</li>
+<li>如果 limiter 被重新使用，那么这条线又慢慢往左移动，直到 x=0 处，当 storedPermits 处于 maxPermits 状态时，我们认为 limiter 中的 permits 是冷的，此时获取一个 permit 需要较多的时间，因为需要预热，有一个关键的分界点是 <strong>thresholdPermits</strong>。</li>
+</ul>
+<p><strong>预热时间</strong>是创建RaterLimiter对象时指定的，所以我们需要通过预热时间计算出<strong>thresholdPermits</strong> 和 <strong>maxPermits</strong> 的值，由于图中x轴和y轴分别代表保存的令牌数量和获取令牌的时间，通过数学常识我门不难得出<strong>梯形的面积就是预热时间</strong>。</p>
+<blockquote>
+<p>  从 thresholdPermits 到 0 的时间，是从 maxPermits 到 thresholdPermits 时间的一半，也就是梯形的面积是长方形面积的 2 倍，梯形的面积是 warmupPeriod。（前提）之所以长方形的面积是 warmupPeriod/2，是因为 coldFactor 是硬编码的 3。</p>
+</blockquote>
+<p>由于梯形面积为warmupPeriod，且存在二倍关系，故有：</p>
+<script type="math/tex; mode=display">
+warmupPeriod = 2 * stableInterval * thresholdPermits</script><p>亦得：</p>
+<script type="math/tex; mode=display">
+thresholdPermits = 0.5 * warmupPeriod / stableInterval</script><p>梯形面积可通过梯形面积公式以下面的方式表示：</p>
+<script type="math/tex; mode=display">
+warmupPeriod = 0.5 * (stableInterval + coldInterval) * (maxPermits - thresholdPermits)</script><p>整理后可以将maxPermits表示为：</p>
+<script type="math/tex; mode=display">
+maxPermits = thresholdPermits + 2.0 * warmupPeriod / (stableInterval + coldInterval)</script><p>因为warmupPeriod是我们指定的，而且stableInterval可以通过计算得出，所以通过上述公式可以计算出thresholdPermits 和 maxPermits 的值。</p>
+<p>​    冷却时间间隔，它指的是 storedPermits 中每个 permit 的增长速度，也就是我们前面说的 x=k 这条垂直线往右的移动速度，为了达到从 0 到 maxPermits 花费 warmupPeriodMicros 的时间，我们将其定义为：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">double</span> <span class="title">coolDownIntervalMicros</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> warmupPeriodMicros / maxPermits;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">resync</span><span class="params">(<span class="keyword">long</span> nowMicros)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (nowMicros &gt; nextFreeTicketMicros) &#123;</span><br><span class="line">    <span class="comment">// coolDownIntervalMicros 在这里使用</span></span><br><span class="line">    <span class="keyword">double</span> newPermits = (nowMicros - nextFreeTicketMicros) / coolDownIntervalMicros();</span><br><span class="line">    storedPermits = min(maxPermits, storedPermits + newPermits);</span><br><span class="line">    nextFreeTicketMicros = nowMicros;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>doset方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">doSetRate</span><span class="params">(<span class="keyword">double</span> permitsPerSecond, <span class="keyword">double</span> stableIntervalMicros)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">double</span> oldMaxPermits = maxPermits;</span><br><span class="line">    <span class="comment">// coldFactor 是固定的 3</span></span><br><span class="line">    <span class="keyword">double</span> coldIntervalMicros = stableIntervalMicros * coldFactor;</span><br><span class="line">    <span class="comment">// 这个公式上面已经说了</span></span><br><span class="line">    thresholdPermits = <span class="number">0.5</span> * warmupPeriodMicros / stableIntervalMicros;</span><br><span class="line">    <span class="comment">// 这个公式上面也已经说了</span></span><br><span class="line">    maxPermits =</span><br><span class="line">        thresholdPermits + <span class="number">2.0</span> * warmupPeriodMicros / (stableIntervalMicros + coldIntervalMicros);</span><br><span class="line">    <span class="comment">// 计算那条斜线的斜率。数学知识，对边 / 临边</span></span><br><span class="line">    slope = (coldIntervalMicros - stableIntervalMicros) / (maxPermits - thresholdPermits);</span><br><span class="line">    <span class="keyword">if</span> (oldMaxPermits == Double.POSITIVE_INFINITY) &#123;</span><br><span class="line">        <span class="comment">// if we don't special-case this, we would get storedPermits == NaN, below</span></span><br><span class="line">        storedPermits = <span class="number">0.0</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        storedPermits =</span><br><span class="line">            (oldMaxPermits == <span class="number">0.0</span>)</span><br><span class="line">                ? maxPermits <span class="comment">// initial state is cold</span></span><br><span class="line">                : storedPermits * maxPermits / oldMaxPermits;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>aquire方法：</p>
+<p>在 SmoothWarmingUp 的实现中，由于需要预热，所以从 storedPermits 中取 permits 需要花费一定的时间，首先要看一下这部分代码，这里是acquire的核心，也就是对等待时间的计算也就是<code>storedPermitsToWaitTime()</code>方法的内容。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">final</span> <span class="keyword">long</span> <span class="title">reserveEarliestAvailable</span><span class="params">(<span class="keyword">int</span> requiredPermits, <span class="keyword">long</span> nowMicros)</span> </span>&#123;</span><br><span class="line">  resync(nowMicros);</span><br><span class="line">  <span class="keyword">long</span> returnValue = nextFreeTicketMicros;</span><br><span class="line">  <span class="keyword">double</span> storedPermitsToSpend = min(requiredPermits, <span class="keyword">this</span>.storedPermits);</span><br><span class="line">  <span class="keyword">double</span> freshPermits = requiredPermits - storedPermitsToSpend;</span><br><span class="line">  <span class="keyword">long</span> waitMicros =</span><br><span class="line">    <span class="comment">//这里计算等待时间</span></span><br><span class="line">      storedPermitsToWaitTime(<span class="keyword">this</span>.storedPermits, storedPermitsToSpend)</span><br><span class="line">          + (<span class="keyword">long</span>) (freshPermits * stableIntervalMicros);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">this</span>.nextFreeTicketMicros = LongMath.saturatedAdd(nextFreeTicketMicros, waitMicros);</span><br><span class="line">  <span class="keyword">this</span>.storedPermits -= storedPermitsToSpend;</span><br><span class="line">  <span class="keyword">return</span> returnValue;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>等待时间其实就是要计算下图中，阴影部分的面积。</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/format,png-20220723190946072.png" alt="img"></p>
+<p>计算的过程如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">long</span> <span class="title">storedPermitsToWaitTime</span><span class="params">(<span class="keyword">double</span> storedPermits, <span class="keyword">double</span> permitsToTake)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">double</span> availablePermitsAboveThreshold = storedPermits - thresholdPermits;</span><br><span class="line">  <span class="keyword">long</span> micros = <span class="number">0</span>;</span><br><span class="line">  <span class="comment">// 如果右边梯形部分有 permits，那么先从右边部分获取permits，计算梯形部分的阴影部分的面积</span></span><br><span class="line">  <span class="keyword">if</span> (availablePermitsAboveThreshold &gt; <span class="number">0.0</span>) &#123;</span><br><span class="line">    <span class="comment">// 从右边部分获取的 permits 数量</span></span><br><span class="line">    <span class="keyword">double</span> permitsAboveThresholdToTake = min(availablePermitsAboveThreshold, permitsToTake);</span><br><span class="line">    <span class="comment">// 梯形面积公式：(上底+下底)*高/2</span></span><br><span class="line">    <span class="keyword">double</span> length =</span><br><span class="line">        permitsToTime(availablePermitsAboveThreshold)</span><br><span class="line">            + permitsToTime(availablePermitsAboveThreshold - permitsAboveThresholdToTake);</span><br><span class="line">    micros = (<span class="keyword">long</span>) (permitsAboveThresholdToTake * length / <span class="number">2.0</span>);</span><br><span class="line">    permitsToTake -= permitsAboveThresholdToTake;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 加上 长方形部分的阴影面积</span></span><br><span class="line">  micros += (<span class="keyword">long</span>) (stableIntervalMicros * permitsToTake);</span><br><span class="line">  <span class="keyword">return</span> micros;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="comment">// 对于给定的 x 值，计算 y 值</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">double</span> <span class="title">permitsToTime</span><span class="params">(<span class="keyword">double</span> permits)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> stableIntervalMicros + permits * slope;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>​    至此，RateLimiter的平滑突发限流与平滑预热限流全部分析完毕！</p>
+<p><strong>以上！</strong></p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>liuchanglin</span>
+                    </p>
+                
+                
+                
+                
+                     <p class="copyright-item">
+                         <span>Slogan:</span>
+                         <span><strong>我惭携宝剑，只为看山来.</strong></span>
+                     </p>
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tags/Java/"># Java</a>
+                    
+                        <a href="/tags/Algorithm/"># Algorithm</a>
+                    
+                        <a href="/tags/Guava/"># Guava</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2023/01/23/%E8%99%9A%E6%8B%9F%E6%9C%BA%E7%BB%9F%E8%AE%A1%E4%BF%A1%E6%81%AF%E7%9B%91%E8%A7%86%E5%B7%A5%E5%85%B7-jstat/">虚拟机统计信息监视工具 jstat</a>
+            
+            
+            <a class="next" rel="next" href="/2021/04/03/%E4%BB%8ECPU-cache%E4%B8%8E%E7%BC%93%E5%AD%98%E8%A1%8C%E5%88%B0%E9%AB%98%E6%80%A7%E8%83%BD%E9%98%9F%E5%88%97Disruptor/">从CPU cache与缓存行到高性能队列Disruptor</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+        </div>
+        <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© liuchanglin | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+</html>
