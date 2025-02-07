@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="liuchanglin">
+
+
+
+
+
+<title>HashMap的工作原理(二)：HashMap中的数据结构与原理 | liuchanglin &#39;s blog</title>
+
+
+
+    <link rel="icon" href="/img.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body>
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">LiuChanglin&#39;s Blog</a></div>
+            <div class="menu navbar-right">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+                <input id="switch_default" type="checkbox" class="switch_default">
+                <label for="switch_default" class="toggleBtn"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">LiuChanglin&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if(toggleMenu.classList.contains("active")){
+           toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        }else{
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+        <div class="main">
+            <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    document.ready(
+        function () {
+            tocbot.init({
+                tocSelector: '.tocbot-list',
+                contentSelector: '.post-content',
+                headingSelector: 'h1, h2, h3, h4, h5',
+                collapseDepth: 1,
+                orderedList: false,
+                scrollSmooth: true,
+            })
+        }
+    )
+
+    function expand_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 6,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "collapse_toc()");
+        b.innerHTML = "Collapse all"
+    }
+
+    function collapse_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 1,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "expand_toc()");
+        b.innerHTML = "Expand all"
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">HashMap的工作原理(二)：HashMap中的数据结构与原理</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">liuchanglin</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">July 26, 2020&nbsp;&nbsp;13:30:35</a>
+                        </span>
+                    
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <h3 id="1、哈希表概述"><a href="#1、哈希表概述" class="headerlink" title="1、哈希表概述"></a>1、哈希表概述</h3><p>​    在了解什么是HashMap之前，我们首先要了解哈希表（Hash table）：</p>
+<blockquote>
+<p>哈希表（hash table）<br>也叫散列表，是一种非常重要的数据结构，应用场景及其丰富，许多缓存技术（比如memcached）的核心其实就是在内存</p>
+<p>张大的哈希表. </p>
+</blockquote>
+<p>​    首先，与哈希表进行区别，我们要了解一下其他数据结构在新增、查找等基础操作的执行性能. </p>
+<p><strong>数组：</strong></p>
+<p>​    数组采用一段连续的存储单元来进行数据存储，对于指定下标的查找，时间复杂度为O(1)；通过给定值的查找，需要遍历数组，逐一比对给定关键字和数组元素，时间复杂度为O(n)，对于有序数组当然可以采用二分查找、差值查找，斐波那契查找等方式，可以讲查找复杂度提高到O(logn)；对于一般的插入、删除操作，涉及到数组元素的移动，平均复杂度为O(n)。</p>
+<p>​    数组在内存中查找位置满足公式：</p>
+<blockquote>
+<p>a[i]_address = base_address + i*data_type_size</p>
+</blockquote>
+<p>​    这里的base_address代表数组头节点内存地址，i表示为下标，data_type_size表示每个节点的大小，所以通过这个公式计算，可以快速定位到指定下标的元素，这也是为什么数组下标第一个是0的原因了（减少一次减法运算，提高效率）。</p>
+<p><strong>线性链表：</strong></p>
+<p>​    对于链表的新增、删除等操作，只需要处理节点之间的引用即可，这样的话时间复杂度就是O(1)，而查找操作需要遍历链表注意进行比对，复杂度为O(n)。</p>
+<p><strong>二叉树：</strong></p>
+<p>​    对于一颗相对平衡的有序二叉树，对其进行插入，查找，删除等操作，平均复杂度均为O(logn)。</p>
+<p><strong>哈希表：</strong></p>
+<p>​    相比于以上数据结构，在哈希表中进行添加、删除、查找等操作，性能十分高，在不考虑哈希冲突的情况下。仅需要一次定位即可完成，时间复杂度为O(1). </p>
+<p>​    哈希表的主体是一个数组，一般被称为bucket数组，在这个bucket中存放着我们需要保存的数据元素，在我们进行保存的时候，通过对数据hash值与bucket数组长度之间进行运算，可以得到当前元素要存储的位置。也就是说通过某种函数映射，将元素映射到bucket中的特定位置上，有了这个位置我们就可以进行快速的数据查找定位。</p>
+<h3 id="2、HashMap的数据结构"><a href="#2、HashMap的数据结构" class="headerlink" title="2、HashMap的数据结构"></a>2、HashMap的数据结构</h3><h4 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h4><p>​    HashMap最早出现在JDK 1.2中，底层基于散列算法实现。HashMap允许null键和null值，在计算null键的哈希值时，null键哈希值为0。HashMap并不保证键值对的顺序，这意味着在进行某些操作之后，键值对的顺序可能会发生变化。另外，HashMap是非线程安全的类，在多线程环境下可能存在问题。</p>
+<p>​    jdk1.8之前采用的是数组+链表的数据结构，每个元素都是一个Entry结点，包含key、value、hash值、指向下一个元素的next指针四个属性。jdk1.8之后采用的是数组+链表或者是红黑树的数据结构，每一个元素都是一个Node结点，Node实现了Entry接口，Node有一个子类TreeNode，代表树结点。</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20200726164635518.png" alt="image-20200726164635518"  /></p>
+<h4 id="散列算法"><a href="#散列算法" class="headerlink" title="散列算法"></a>散列算法</h4><p>在进行增删查等操作时，首先要定位到元素在数组（bucket数组）中的位置，而定位这个位置的方法就是“散列算法”，也叫哈希函数。</p>
+<p>散列算法：我们可以看到在hashmap中要找到某个元素，需要根据key的hash值来求得对应数组中的位置。如何计算这个位置就是hash算法。前面说过hashmap的数据结构是数组和链表的结合，所以我们当然希望这个hashmap里面的元素位置尽量的分布均匀些，尽量使得每个位置上的元素数量只有一个，那么当我们用hash算法求得这个位置的时候，马上就可以知道对应位置的元素就是我们要的，而不用再去遍历链表。</p>
+<p>这个算法在HashMap的实现方法是用hashcode对数组长度进行取模运算，也就是：</p>
+<blockquote>
+<p>index = hashcode % length（举例来说 定位元素35在桶数组中的位置：index = 35（取其hash）% 16（hashMap初始化长度）</p>
+</blockquote>
+<p>图中的查询方法简单举例就是 index = 35 % 16 = 3 然后再在3号桶所指向的链表中继续查找，35就在链表中.</p>
+<h4 id="散列冲突"><a href="#散列冲突" class="headerlink" title="散列冲突"></a>散列冲突</h4><p>​    散列冲突也叫哈希碰撞、哈希冲突。正如万事无完美，如果两个不同的元素，通过散列算法计算出的存储地址相同该怎么办呢？也就是说，我们在对元素进行散列算法确定位置之后，发现当前位置上已经有了元素这就是我们所说的散列冲突。</p>
+<p><strong>解决方法：</strong></p>
+<ol>
+<li><p><strong>开放寻址法</strong></p>
+<p>开放寻址的思想就是，出现了散列冲突之后，我们就重新找到一个空闲位置将其插入，重新探测位置的方法有很多，比如，<strong>线性探测(Linear Probing)</strong>。</p>
+<p><strong>线性探测：</strong></p>
+<p>​    当我们往散列表中插入数据时，如果某个数据经过散列函数散列之后，存储位置已经被占用了，我们就从当前位置开始，依次往后查找，看是否有空闲位置，直到找到为止。</p>
+<p>​    对于线性探测的查找有点儿类似插入过程。我们通过散列函数求出要查找元素的键值对应的散列值，然后比较数组中下标为散列值的元素和要查找的元素。如果相等，则说明就是我们要找的元素；否则就顺序往后依次查找。<strong>如果遍历到数组中的空闲位置，还没有找到，就说明要查找的元素并没有在散列表中。</strong></p>
+<p>​    但是线性探测的一个重要问题就是他的删除操作，我们在删除元素的时候不能单纯的把元素设置为空，因为在查找的时候，一旦我们通过线性探测方法，找到一个空闲位置，我们就可以认定散列表中不存在这个数据。但是如果这个位置就是我们刚刚删除的，那这个查找算法就失效了，原来存在的数据会被认定为不存在，所以我们在删除元素时，应该将删除的元素标记为一个deleted状态，这个时候我们进行查找，就可以继续向下探测了。</p>
+<blockquote>
+<p>由此可以看到，线性探测有很大的问题，当我们插入的数据越来越多，空闲位置越来越少，那这个时候就会更容易产生冲突，而由此会浪费大量的时间在探测这个操作上，极端情况下还容易探测整张表，这样的效率极其低下。除了线性探测之外重新探测的方式还有 <strong>二次探测(Quadratic probing)</strong>和 <strong>双重散列(Double hashing)</strong></p>
+</blockquote>
+</li>
+<li><p><strong>链表法</strong></p>
+<p>​    链表法是一种更加常用的散列冲突解决办法，相比开放寻址法，它要简单很多。我们来看这个图，在散列表中，每个“桶（bucket）”或者“槽（slot）”会对应一条链表，所有散列值相同的元素我们都放到相同槽位对应的链表中。</p>
+<p>​    插入的时候，我们只需要通过散列函数计算出对应的散列槽位，将其插入到对应链表中即可，所以插入的时间复杂度是 O(1)。当查找、删除一个元素时，我们同样通过散列函数计算出对应的槽，然后遍历链表查找或者删除。</p>
+<p>​    <strong>我们在HashMap中采用的正是链表法，而且在链表过长时还会转化成为红黑树，来保证效率。</strong></p>
+</li>
+</ol>
+<h3 id="3、HashMap中的数据结构实现"><a href="#3、HashMap中的数据结构实现" class="headerlink" title="3、HashMap中的数据结构实现"></a>3、HashMap中的数据结构实现</h3><h4 id="Bucket数组"><a href="#Bucket数组" class="headerlink" title="Bucket数组"></a>Bucket数组</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * The table, initialized on first use, and resized as</span></span><br><span class="line"><span class="comment"> * necessary. When allocated, length is always a power of two.</span></span><br><span class="line"><span class="comment"> * (We also tolerate length zero in some operations to allow</span></span><br><span class="line"><span class="comment"> * bootstrapping mechanics that are currently not needed.)</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">transient</span> Node&lt;K,V&gt;[] table;</span><br></pre></td></tr></table></figure>
+<p>Bucket数组就是一个Node<K,V>类型的数组，使用了<code>transient</code>关键字修饰</p>
+<blockquote>
+<ol>
+<li>一旦变量被transient修饰，变量将不再是对象持久化的一部分，该变量内容在序列化后无法获得访问。</li>
+<li>transient关键字只能修饰变量，而不能修饰方法和类。注意，本地变量是不能被transient关键字修饰的。变量如果是用户自定义类变量，则该类需要实现Serializable接口。</li>
+<li>一个静态变量不管是否被transient修饰，均不能被序列化。 </li>
+</ol>
+</blockquote>
+<p>在HashMap源码中，我们经常可以看到transient修饰其固有属性，大概是为了序列化的安全性。</p>
+<h4 id="Node"><a href="#Node" class="headerlink" title="Node"></a>Node<K, V></h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Basic hash bin node, used for most entries.  (See below for</span></span><br><span class="line"><span class="comment">     * TreeNode subclass, and in LinkedHashMap for its Entry subclass.)</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">class</span> <span class="title class_">Node</span>&lt;K,V&gt; <span class="keyword">implements</span> <span class="title class_">Map</span>.Entry&lt;K,V&gt; &#123;</span><br><span class="line">        <span class="keyword">final</span> <span class="type">int</span> hash;</span><br><span class="line">        <span class="keyword">final</span> K key;</span><br><span class="line">        V value;</span><br><span class="line">        Node&lt;K,V&gt; next;</span><br><span class="line"></span><br><span class="line">        Node(<span class="type">int</span> hash, K key, V value, Node&lt;K,V&gt; next) &#123;</span><br><span class="line">            <span class="built_in">this</span>.hash = hash;</span><br><span class="line">            <span class="built_in">this</span>.key = key;</span><br><span class="line">            <span class="built_in">this</span>.value = value;</span><br><span class="line">            <span class="built_in">this</span>.next = next;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">final</span> K <span class="title function_">getKey</span><span class="params">()</span>        &#123; <span class="keyword">return</span> key; &#125;</span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">final</span> V <span class="title function_">getValue</span><span class="params">()</span>      &#123; <span class="keyword">return</span> value; &#125;</span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">final</span> String <span class="title function_">toString</span><span class="params">()</span> &#123; <span class="keyword">return</span> key + <span class="string">&quot;=&quot;</span> + value; &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">final</span> <span class="type">int</span> <span class="title function_">hashCode</span><span class="params">()</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> Objects.hashCode(key) ^ Objects.hashCode(value);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">final</span> V <span class="title function_">setValue</span><span class="params">(V newValue)</span> &#123;</span><br><span class="line">            <span class="type">V</span> <span class="variable">oldValue</span> <span class="operator">=</span> value;</span><br><span class="line">            value = newValue;</span><br><span class="line">            <span class="keyword">return</span> oldValue;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">final</span> <span class="type">boolean</span> <span class="title function_">equals</span><span class="params">(Object o)</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (o == <span class="built_in">this</span>)</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">            <span class="keyword">if</span> (o <span class="keyword">instanceof</span> Map.Entry) &#123;</span><br><span class="line">                Map.Entry&lt;?,?&gt; e = (Map.Entry&lt;?,?&gt;)o;</span><br><span class="line">                <span class="keyword">if</span> (Objects.equals(key, e.getKey()) &amp;&amp;</span><br><span class="line">                    Objects.equals(value, e.getValue()))</span><br><span class="line">                    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>Node类是HashMap的一个静态内部类，实现了Map.Entry<K, V>接口。</p>
+<p>从代码中我们可以看到，Node的属性有K的Hash值，具体的Key、Value以及指向下一个Node的Next指针。</p>
+<p>同时，Node也对其父接口中的抽象方法进行了具体的实现. </p>
+<h4 id="EntrySet"><a href="#EntrySet" class="headerlink" title="EntrySet"></a>EntrySet</h4><p>通常我们在遍历一个Map的时候，通常直接使用使用它的<code>entrySet()</code>方法进行遍历，比如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">HashMap&lt;String, String&gt; hashMap = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">        <span class="comment">//set sth into hashmap ...</span></span><br><span class="line">        <span class="keyword">for</span> (Map.Entry&lt;String, String&gt; stringStringEntry : hashMap.entrySet()) &#123;</span><br><span class="line">            System.out.println(stringStringEntry.getKey());</span><br><span class="line">            System.out.println(stringStringEntry.getValue());</span><br><span class="line">        &#125;</span><br></pre></td></tr></table></figure>
+<p>在HashMap的源码中，我们可以看到entrySet()方法，如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Returns a &#123;<span class="doctag">@link</span> Set&#125; view of the mappings contained in this map.</span></span><br><span class="line"><span class="comment"> * The set is backed by the map, so changes to the map are</span></span><br><span class="line"><span class="comment"> * reflected in the set, and vice-versa.  If the map is modified</span></span><br><span class="line"><span class="comment"> * while an iteration over the set is in progress (except through</span></span><br><span class="line"><span class="comment"> * the iterator&#x27;s own &lt;tt&gt;remove&lt;/tt&gt; operation, or through the</span></span><br><span class="line"><span class="comment"> * &lt;tt&gt;setValue&lt;/tt&gt; operation on a map entry returned by the</span></span><br><span class="line"><span class="comment"> * iterator) the results of the iteration are undefined.  The set</span></span><br><span class="line"><span class="comment"> * supports element removal, which removes the corresponding</span></span><br><span class="line"><span class="comment"> * mapping from the map, via the &lt;tt&gt;Iterator.remove&lt;/tt&gt;,</span></span><br><span class="line"><span class="comment"> * &lt;tt&gt;Set.remove&lt;/tt&gt;, &lt;tt&gt;removeAll&lt;/tt&gt;, &lt;tt&gt;retainAll&lt;/tt&gt; and</span></span><br><span class="line"><span class="comment"> * &lt;tt&gt;clear&lt;/tt&gt; operations.  It does not support the</span></span><br><span class="line"><span class="comment"> * &lt;tt&gt;add&lt;/tt&gt; or &lt;tt&gt;addAll&lt;/tt&gt; operations.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> a set view of the mappings contained in this map</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> Set&lt;Map.Entry&lt;K,V&gt;&gt; entrySet() &#123;</span><br><span class="line">    Set&lt;Map.Entry&lt;K,V&gt;&gt; es;</span><br><span class="line">    <span class="keyword">return</span> (es = entrySet) == <span class="literal">null</span> ? (entrySet = <span class="keyword">new</span> <span class="title class_">EntrySet</span>()) : es;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里就不得不让人发觉一个问题，在单纯调用entrySet这个方法的时候，只是返回了一个新的entrySet，那么为什么我们仍然可以在entrySet中访问到HashMap的key和value值呢？</p>
+<p>我们从EntrySet的源码进行分析：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">EntrySet</span> <span class="keyword">extends</span> <span class="title class_">AbstractSet</span>&lt;Map.Entry&lt;K,V&gt;&gt; &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="type">int</span> <span class="title function_">size</span><span class="params">()</span>                 &#123; <span class="keyword">return</span> size; &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title function_">clear</span><span class="params">()</span>               &#123; HashMap.<span class="built_in">this</span>.clear(); &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> Iterator&lt;Map.Entry&lt;K,V&gt;&gt; iterator() &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">EntryIterator</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="type">boolean</span> <span class="title function_">contains</span><span class="params">(Object o)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (!(o <span class="keyword">instanceof</span> Map.Entry))</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        Map.Entry&lt;?,?&gt; e = (Map.Entry&lt;?,?&gt;) o;</span><br><span class="line">        <span class="type">Object</span> <span class="variable">key</span> <span class="operator">=</span> e.getKey();</span><br><span class="line">        Node&lt;K,V&gt; candidate = getNode(hash(key), key);</span><br><span class="line">        <span class="keyword">return</span> candidate != <span class="literal">null</span> &amp;&amp; candidate.equals(e);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="type">boolean</span> <span class="title function_">remove</span><span class="params">(Object o)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (o <span class="keyword">instanceof</span> Map.Entry) &#123;</span><br><span class="line">            Map.Entry&lt;?,?&gt; e = (Map.Entry&lt;?,?&gt;) o;</span><br><span class="line">            <span class="type">Object</span> <span class="variable">key</span> <span class="operator">=</span> e.getKey();</span><br><span class="line">            <span class="type">Object</span> <span class="variable">value</span> <span class="operator">=</span> e.getValue();</span><br><span class="line">            <span class="keyword">return</span> removeNode(hash(key), key, value, <span class="literal">true</span>, <span class="literal">true</span>) != <span class="literal">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> Spliterator&lt;Map.Entry&lt;K,V&gt;&gt; spliterator() &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">EntrySpliterator</span>&lt;&gt;(HashMap.<span class="built_in">this</span>, <span class="number">0</span>, -<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title function_">forEach</span><span class="params">(Consumer&lt;? <span class="built_in">super</span> Map.Entry&lt;K,V&gt;&gt; action)</span> &#123;</span><br><span class="line">        Node&lt;K,V&gt;[] tab;</span><br><span class="line">        <span class="keyword">if</span> (action == <span class="literal">null</span>)</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">NullPointerException</span>();</span><br><span class="line">        <span class="keyword">if</span> (size &gt; <span class="number">0</span> &amp;&amp; (tab = table) != <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="type">int</span> <span class="variable">mc</span> <span class="operator">=</span> modCount;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; tab.length; ++i) &#123;</span><br><span class="line">                <span class="keyword">for</span> (Node&lt;K,V&gt; e = tab[i]; e != <span class="literal">null</span>; e = e.next)</span><br><span class="line">                    action.accept(e);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (modCount != mc)</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ConcurrentModificationException</span>();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先我们要明确一个问题，EntrySet是继承自AbstractSet类的，也就是说，EntrySet本质上是一个Set集合，而对于一个Set集合，我们应当明白：</p>
+<blockquote>
+<p>Set不提供Get方法，所以我们无法直接获取Set中的元素 . </p>
+<p>对于一个Set集合，我们想要对他进行遍历，只有两个方法：</p>
+<ol>
+<li>使用迭代器Iterator进行迭代</li>
+<li>使用增强for循环</li>
+</ol>
+<p>而增强for循环，本质上就是使用了迭代器。</p>
+</blockquote>
+<p>由于EntrySet只能被迭代器访问到其中元素，所以我们只需要关注Iterator方法中调用的<strong>new EntryIterator()</strong>。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">EntryIterator</span> <span class="keyword">extends</span> <span class="title class_">HashIterator</span> <span class="keyword">implements</span> <span class="title class_">Iterator</span>&lt;Map.Entry&lt;K,V&gt;&gt; &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> Map.Entry&lt;K,V&gt; <span class="title function_">next</span><span class="params">()</span> &#123; <span class="keyword">return</span> nextNode(); &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">final</span> Node&lt;K,V&gt; <span class="title function_">nextNode</span><span class="params">()</span> &#123;</span><br><span class="line">    Node&lt;K,V&gt;[] t;</span><br><span class="line">    Node&lt;K,V&gt; e = next;</span><br><span class="line">    <span class="keyword">if</span> (modCount != expectedModCount)</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">ConcurrentModificationException</span>();</span><br><span class="line">    <span class="keyword">if</span> (e == <span class="literal">null</span>)</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">NoSuchElementException</span>();</span><br><span class="line">    <span class="keyword">if</span> ((next = (current = e).next) == <span class="literal">null</span> &amp;&amp; (t = table) != <span class="literal">null</span>) &#123;</span><br><span class="line">      <span class="keyword">do</span> &#123;&#125; <span class="keyword">while</span> (index &lt; t.length &amp;&amp; (next = t[index++]) == <span class="literal">null</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> e;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>EntryIterator迭代器的next()方法，是获取HashMap中的next元素，所以实际上在这里迭代到的，是HashMap的元素，这也就是为什么EntrySet是有值的原因.</p>
+<p>​    以上！🙏</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>liuchanglin</span>
+                    </p>
+                
+                
+                
+                
+                     <p class="copyright-item">
+                         <span>Slogan:</span>
+                         <span><strong>我惭携宝剑，只为看山来.</strong></span>
+                     </p>
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tags/DataStructure/"># DataStructure</a>
+                    
+                        <a href="/tags/Algorithm/"># Algorithm</a>
+                    
+                        <a href="/tags/Java/"># Java</a>
+                    
+                        <a href="/tags/HashMap/"># HashMap</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2020/09/05/Spring%E8%87%AA%E5%8A%A8%E8%A3%85%E9%85%8D%E7%9A%84%E4%B8%80%E6%AC%A1%E8%B8%A9%E5%9D%91%E7%BB%8F%E5%8E%86/">Spring自动装配的一次踩坑经历</a>
+            
+            
+            <a class="next" rel="next" href="/2020/06/07/HashMap%E7%9A%84%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86-%E4%B8%80-%EF%BC%9AHash%E7%AE%97%E6%B3%95/">HashMap的工作原理(一)：Hash算法</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+        </div>
+        <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© liuchanglin | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+</html>

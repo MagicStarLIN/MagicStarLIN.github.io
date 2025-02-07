@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="liuchanglin">
+
+
+
+
+
+<title>Dubbo LoadBalance 负载均衡 | liuchanglin &#39;s blog</title>
+
+
+
+    <link rel="icon" href="/img.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body>
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">LiuChanglin&#39;s Blog</a></div>
+            <div class="menu navbar-right">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+                <input id="switch_default" type="checkbox" class="switch_default">
+                <label for="switch_default" class="toggleBtn"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">LiuChanglin&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if(toggleMenu.classList.contains("active")){
+           toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        }else{
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+        <div class="main">
+            <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    document.ready(
+        function () {
+            tocbot.init({
+                tocSelector: '.tocbot-list',
+                contentSelector: '.post-content',
+                headingSelector: 'h1, h2, h3, h4, h5',
+                collapseDepth: 1,
+                orderedList: false,
+                scrollSmooth: true,
+            })
+        }
+    )
+
+    function expand_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 6,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "collapse_toc()");
+        b.innerHTML = "Collapse all"
+    }
+
+    function collapse_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 1,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "expand_toc()");
+        b.innerHTML = "Expand all"
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">Dubbo LoadBalance 负载均衡</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">liuchanglin</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">March 5, 2023&nbsp;&nbsp;16:50:53</a>
+                        </span>
+                    
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <h2 id="一、负载均衡策略概述"><a href="#一、负载均衡策略概述" class="headerlink" title="一、负载均衡策略概述"></a>一、负载均衡策略概述</h2><p> 大部分使用Dubbo的互联网应用中，服务提供方基本都是以集群的形式提供接口，为了避免大量请求一直集中在一个或者几个服务提供机器上，从而使这些机器负载升高最后影响服务健康状态，需要做一定的负载均衡策略。Dubbo提供了多种负载均衡策略，默认为<strong><em>random</em></strong>，也就是每次随机选择一台服务提供者的服务。</p>
+<p> Dubbo提供的负载均衡策略有如下几种：</p>
+<ul>
+<li>RandomLoadBalance    随机策略</li>
+<li>RoundRobinLoadBalance 轮询策略</li>
+<li>LeastActiveLoadBalance 最少活跃调用数</li>
+<li>ConsistentHashLoadBalance 一致性hash策略</li>
+</ul>
+<h2 id="二、RandomLoadBalance"><a href="#二、RandomLoadBalance" class="headerlink" title="二、RandomLoadBalance"></a>二、RandomLoadBalance</h2><p>  随机策略按照概率设置权重，比较均匀而且可以动态调节提供者的权重。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line">  <span class="keyword">protected</span> &lt;T&gt; Invoker&lt;T&gt; <span class="title function_">doSelect</span><span class="params">(List&lt;Invoker&lt;T&gt;&gt; invokers, URL url, Invocation invocation)</span> &#123;</span><br><span class="line">      <span class="type">int</span> <span class="variable">length</span> <span class="operator">=</span> invokers.size(); <span class="comment">// 获取个数</span></span><br><span class="line">      <span class="type">int</span> <span class="variable">totalWeight</span> <span class="operator">=</span> <span class="number">0</span>; <span class="comment">// The sum of weights</span></span><br><span class="line">      <span class="type">boolean</span> <span class="variable">sameWeight</span> <span class="operator">=</span> <span class="literal">true</span>; <span class="comment">// Every invoker has the same weight?</span></span><br><span class="line">      <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; length; i++) &#123;</span><br><span class="line">          <span class="comment">//计算权重</span></span><br><span class="line">          <span class="type">int</span> <span class="variable">weight</span> <span class="operator">=</span> getWeight(invokers.get(i), invocation);</span><br><span class="line">          totalWeight += weight; <span class="comment">// Sum</span></span><br><span class="line">          <span class="keyword">if</span> (sameWeight &amp;&amp; i &gt; <span class="number">0</span> <span class="comment">// 与下一个的invoker的权重不相等</span></span><br><span class="line">                  &amp;&amp; weight != getWeight(invokers.get(i - <span class="number">1</span>), invocation)) &#123;</span><br><span class="line">              sameWeight = <span class="literal">false</span>;</span><br><span class="line">          &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 当拥有不同权重的invoker的时候</span></span><br><span class="line">      <span class="keyword">if</span> (totalWeight &gt; <span class="number">0</span> &amp;&amp; !sameWeight) &#123;</span><br><span class="line">          <span class="comment">// If (not every invoker has the same weight &amp; at least one invoker&#x27;s weight&gt;0), </span></span><br><span class="line">        	<span class="comment">// select randomly based on totalWeight.</span></span><br><span class="line">          <span class="type">int</span> <span class="variable">offset</span> <span class="operator">=</span> random.nextInt(totalWeight);<span class="comment">// 在所有权重中选择一个 数</span></span><br><span class="line">          <span class="comment">// Return a invoker based on the random value.</span></span><br><span class="line">          <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; length; i++) &#123;</span><br><span class="line"></span><br><span class="line">              <span class="comment">//使用 随机出来的这个 offset - invoker的权重值</span></span><br><span class="line">              offset -= getWeight(invokers.get(i), invocation);</span><br><span class="line">              <span class="keyword">if</span> (offset &lt; <span class="number">0</span>) &#123;</span><br><span class="line">                  <span class="comment">// 小于0 的时候就返回当前这个invoker</span></span><br><span class="line">                  <span class="keyword">return</span> invokers.get(i);</span><br><span class="line">              &#125;</span><br><span class="line">          &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">// If all invokers have the same weight value or totalWeight=0, return evenly.</span></span><br><span class="line">      <span class="comment">// 在集合下标中随机选择一个下标</span></span><br><span class="line">      <span class="keyword">return</span> invokers.get(random.nextInt(length));</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p><code>length</code> 获取所有invoker个数， 通过invoker个数循环计算<code>totalWeight</code> 总权重，获取一个<strong>[0,totalWeight)</strong>区间内的随机数，再进行一个减法获取对应的invoker。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="type">int</span> <span class="title function_">getWeight</span><span class="params">(Invoker&lt;?&gt; invoker, Invocation invocation)</span> &#123;</span><br><span class="line">   		<span class="comment">// 通过参数weight指定权重</span></span><br><span class="line">       <span class="type">int</span> <span class="variable">weight</span> <span class="operator">=</span> invoker.getUrl().getMethodParameter(invocation.getMethodName(), <span class="string">&quot;weight&quot;</span>, <span class="number">100</span>);</span><br><span class="line">       <span class="keyword">if</span> (weight &gt; <span class="number">0</span>) &#123;</span><br><span class="line">           <span class="type">long</span> <span class="variable">timestamp</span> <span class="operator">=</span> invoker.getUrl().getParameter(<span class="string">&quot;remote.timestamp&quot;</span>, <span class="number">0L</span>);</span><br><span class="line">           <span class="keyword">if</span> (timestamp &gt; <span class="number">0L</span>) &#123;</span><br><span class="line">               <span class="type">int</span> <span class="variable">uptime</span> <span class="operator">=</span> (<span class="type">int</span>)(System.currentTimeMillis() - timestamp);</span><br><span class="line">             	<span class="comment">// 设置预热时间</span></span><br><span class="line">               <span class="type">int</span> <span class="variable">warmup</span> <span class="operator">=</span> invoker.getUrl().getParameter(<span class="string">&quot;warmup&quot;</span>, <span class="number">600000</span>);</span><br><span class="line">               <span class="keyword">if</span> (uptime &gt; <span class="number">0</span> &amp;&amp; uptime &lt; warmup) &#123;</span><br><span class="line">                   weight = calculateWarmupWeight(uptime, warmup, weight);</span><br><span class="line">               &#125;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">return</span> weight;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+<p>通过getWeight方法可以看到，默认权重为100，可以自定义指定权重和预热时间。</p>
+<h2 id="三、RoundRobinLoadBalance"><a href="#三、RoundRobinLoadBalance" class="headerlink" title="三、RoundRobinLoadBalance"></a>三、RoundRobinLoadBalance</h2><p>轮询，按照公约之后的权重设置轮询比率。存在执行比较慢的服务提供者堆积请求的情况。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br></pre></td><td class="code"><pre><span class="line"> <span class="comment">// 缓存   key =接口全类名.方法名      value = map&lt;每个invoker的标识，WeightedRoundRobin &gt;</span></span><br><span class="line">  <span class="keyword">private</span> ConcurrentMap&lt;String, ConcurrentMap&lt;String, WeightedRoundRobin&gt;&gt; methodWeightMap = <span class="keyword">new</span> <span class="title class_">ConcurrentHashMap</span>&lt;String, ConcurrentMap&lt;String, WeightedRoundRobin&gt;&gt;();</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="type">AtomicBoolean</span> <span class="variable">updateLock</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AtomicBoolean</span>();</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="type">int</span> <span class="variable">RECYCLE_PERIOD</span> <span class="operator">=</span> <span class="number">60000</span>; <span class="comment">// 更新周期</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line">  <span class="keyword">protected</span> &lt;T&gt; Invoker&lt;T&gt; <span class="title function_">doSelect</span><span class="params">(List&lt;Invoker&lt;T&gt;&gt; invokers, URL url, Invocation invocation)</span> &#123;</span><br><span class="line">      <span class="comment">/// 组装key = 接口全类名.方法名</span></span><br><span class="line">      <span class="type">String</span> <span class="variable">key</span> <span class="operator">=</span> invokers.get(<span class="number">0</span>).getUrl().getServiceKey() + <span class="string">&quot;.&quot;</span> + invocation.getMethodName();</span><br><span class="line">      <span class="comment">// 根据key 从缓存中获取</span></span><br><span class="line">      ConcurrentMap&lt;String, WeightedRoundRobin&gt; map = methodWeightMap.get(key);</span><br><span class="line">      <span class="comment">// 处理是空的情况，如果为空就创建 然后塞进去</span></span><br><span class="line">      <span class="keyword">if</span> (map == <span class="literal">null</span>) &#123;</span><br><span class="line">          methodWeightMap.putIfAbsent(key, <span class="keyword">new</span> <span class="title class_">ConcurrentHashMap</span>&lt;String, WeightedRoundRobin&gt;());</span><br><span class="line">          map = methodWeightMap.get(key);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="type">int</span> <span class="variable">totalWeight</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">      <span class="comment">//初始化max 为long最小值</span></span><br><span class="line">      <span class="type">long</span> <span class="variable">maxCurrent</span> <span class="operator">=</span> Long.MIN_VALUE;</span><br><span class="line">      <span class="comment">// 获取系统当前时间</span></span><br><span class="line">      <span class="type">long</span> <span class="variable">now</span> <span class="operator">=</span> System.currentTimeMillis();</span><br><span class="line">      Invoker&lt;T&gt; selectedInvoker = <span class="literal">null</span>;</span><br><span class="line">      <span class="type">WeightedRoundRobin</span> <span class="variable">selectedWRR</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 遍历invokers</span></span><br><span class="line">      <span class="keyword">for</span> (Invoker&lt;T&gt; invoker : invokers) &#123;</span><br><span class="line"></span><br><span class="line">          <span class="comment">// 将url 转成 身份标识</span></span><br><span class="line">          <span class="type">String</span> <span class="variable">identifyString</span> <span class="operator">=</span> invoker.getUrl().toIdentityString();</span><br><span class="line"></span><br><span class="line">          <span class="comment">// 从map中获取</span></span><br><span class="line">          <span class="type">WeightedRoundRobin</span> <span class="variable">weightedRoundRobin</span> <span class="operator">=</span> map.get(identifyString);</span><br><span class="line">          <span class="comment">// 计算权重</span></span><br><span class="line">          <span class="type">int</span> <span class="variable">weight</span> <span class="operator">=</span> getWeight(invoker, invocation);</span><br><span class="line">          <span class="keyword">if</span> (weight &lt; <span class="number">0</span>) &#123;<span class="comment">// 如果计算的权重小于0 ， 设置成0</span></span><br><span class="line">              weight = <span class="number">0</span>;</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="keyword">if</span> (weightedRoundRobin == <span class="literal">null</span>) &#123;<span class="comment">// 没有获取到，说明没有缓存</span></span><br><span class="line">              weightedRoundRobin = <span class="keyword">new</span> <span class="title class_">WeightedRoundRobin</span>();<span class="comment">//创建WeightedRoundRobin对象</span></span><br><span class="line">              weightedRoundRobin.setWeight(weight);<span class="comment">// 设置权重</span></span><br><span class="line">              <span class="comment">// 将WeightedRoundRobin 对象塞到 map中</span></span><br><span class="line">              map.putIfAbsent(identifyString, weightedRoundRobin);</span><br><span class="line">              weightedRoundRobin = map.get(identifyString);</span><br><span class="line">          &#125;</span><br><span class="line"></span><br><span class="line">          <span class="comment">//如果当前计算的权重与之前缓存的比匹配就设置成当前权重</span></span><br><span class="line">          <span class="keyword">if</span> (weight != weightedRoundRobin.getWeight()) &#123;</span><br><span class="line">              <span class="comment">//weight changed</span></span><br><span class="line">              weightedRoundRobin.setWeight(weight);</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="comment">// 将权重值设置到atomiclong 中 current += weight</span></span><br><span class="line">          <span class="type">long</span> <span class="variable">cur</span> <span class="operator">=</span> weightedRoundRobin.increaseCurrent();</span><br><span class="line">          <span class="comment">// 设置最后修改时间</span></span><br><span class="line">          weightedRoundRobin.setLastUpdate(now);</span><br><span class="line"></span><br><span class="line">          <span class="comment">// 如果当前权重 &gt; max</span></span><br><span class="line">          <span class="keyword">if</span> (cur &gt; maxCurrent) &#123;</span><br><span class="line">              maxCurrent = cur;<span class="comment">// max 设置成赋值为当前权重</span></span><br><span class="line">              selectedInvoker = invoker;</span><br><span class="line">              selectedWRR = weightedRoundRobin;</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="comment">// 总权重+ 当前权重</span></span><br><span class="line">          totalWeight += weight;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 根据RECYCLE_PERIOD时间 更新map 一般发生在服务提供者数量变更</span></span><br><span class="line">      <span class="comment">// 没有在修改的 &amp;&amp; 当前所有的invoker 列表大小 不等于 缓存里面的大小</span></span><br><span class="line">      <span class="keyword">if</span> (!updateLock.get() &amp;&amp; invokers.size() != map.size()) &#123;</span><br><span class="line">          <span class="keyword">if</span> (updateLock.compareAndSet(<span class="literal">false</span>, <span class="literal">true</span>)) &#123;<span class="comment">// cas 操作</span></span><br><span class="line">              <span class="keyword">try</span> &#123;</span><br><span class="line">                  <span class="comment">// copy -&gt; modify -&gt; update reference</span></span><br><span class="line">                  ConcurrentMap&lt;String, WeightedRoundRobin&gt; newMap = <span class="keyword">new</span> <span class="title class_">ConcurrentHashMap</span>&lt;String, WeightedRoundRobin&gt;();</span><br><span class="line">                  newMap.putAll(map);<span class="comment">// 将map添加到 newMap中</span></span><br><span class="line">                  Iterator&lt;Entry&lt;String, WeightedRoundRobin&gt;&gt; it = newMap.entrySet().iterator();</span><br><span class="line">                  <span class="keyword">while</span> (it.hasNext()) &#123;</span><br><span class="line">                      Entry&lt;String, WeightedRoundRobin&gt; item = it.next();</span><br><span class="line">                      <span class="comment">// 移除 1分钟没有改动过的</span></span><br><span class="line">                      <span class="keyword">if</span> (now - item.getValue().getLastUpdate() &gt; RECYCLE_PERIOD) &#123;</span><br><span class="line">                          it.remove();</span><br><span class="line">                      &#125;</span><br><span class="line">                  &#125;<span class="comment">// 替换成新的</span></span><br><span class="line">                  methodWeightMap.put(key, newMap);</span><br><span class="line">              &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                  updateLock.set(<span class="literal">false</span>);</span><br><span class="line">              &#125;</span><br><span class="line">          &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (selectedInvoker != <span class="literal">null</span>) &#123;</span><br><span class="line">          <span class="comment">// 将选中的那个weightedRoundRobin 里面的权重（current）设置为当前值减去总权重</span></span><br><span class="line">          selectedWRR.sel(totalWeight); <span class="comment">// current -= totalWeight </span></span><br><span class="line">          <span class="keyword">return</span> selectedInvoker;<span class="comment">// 返回选中的那个invoker</span></span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">/// 最后就是选择第一个</span></span><br><span class="line">      <span class="comment">// should not happen here</span></span><br><span class="line">      <span class="keyword">return</span> invokers.get(<span class="number">0</span>);</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>​    轮询算法通过不断更新<code>weightedRoundRobin</code> 对象中的<code>current</code>字段来调整接下来调用要选取的invoker，假如我们将所有invoker的权重设置为相同的值，那么loadbalance将会按照顺序的方式进行调用。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (selectedInvoker != <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="comment">// 将选中的那个weightedRoundRobin 里面的权重（current）设置为当前值减去总权重</span></span><br><span class="line">    selectedWRR.sel(totalWeight); <span class="comment">// current -= totalWeight </span></span><br><span class="line">    <span class="keyword">return</span> selectedInvoker;<span class="comment">// 返回选中的那个invoker</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>currentWeight的更新是实现轮询的关键处理逻辑。</p>
+<h2 id="四、LeastActiveLoadBalance"><a href="#四、LeastActiveLoadBalance" class="headerlink" title="四、LeastActiveLoadBalance"></a>四、LeastActiveLoadBalance</h2><p>​    最少活跃调用策略，在了解最小活跃调用负载均衡策略之前需要了解负载均衡中获取invoker活跃数的方法。即通过<code>ActiveLimitFilter</code>获取的invoker的活跃情况。</p>
+<h3 id="com-alibaba-dubbo-rpc-RpcStatus"><a href="#com-alibaba-dubbo-rpc-RpcStatus" class="headerlink" title="com.alibaba.dubbo.rpc.RpcStatus"></a>com.alibaba.dubbo.rpc.RpcStatus</h3><p>这里不做详细分析，需要注意的是在<code>RpcStatus</code>中维护了一个原子类型的<code>active</code>字段，用来表示invoker的并发情况。</p>
+<p>在invoker被调用的前后对字段<code>active</code>进行操作，即：</p>
+<p>invoker调用开始，通过<code>com.alibaba.dubbo.rpc.RpcStatus#beginCount</code>使active + 1</p>
+<p>invoker调用结束，通过<code>com.alibaba.dubbo.rpc.RpcStatus#endCount</code>使active - 1</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">protected</span> &lt;T&gt; Invoker&lt;T&gt; <span class="title function_">doSelect</span><span class="params">(List&lt;Invoker&lt;T&gt;&gt; invokers, URL url, Invocation invocation)</span> &#123;</span><br><span class="line">        <span class="comment">// Number of invokers</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">length</span> <span class="operator">=</span> invokers.size();</span><br><span class="line">        <span class="comment">// 最活跃初始值是-1</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">leastActive</span> <span class="operator">=</span> -<span class="number">1</span>; </span><br><span class="line">        <span class="comment">//具有相同的最小活动值的调用程序的数量(leastActive)</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">leastCount</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span>[] leastIndexs = <span class="keyword">new</span> <span class="title class_">int</span>[length]; </span><br><span class="line">        <span class="comment">// 权重和</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">totalWeight</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="comment">//初始值</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">firstWeight</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">      </span><br><span class="line">        <span class="type">boolean</span> <span class="variable">sameWeight</span> <span class="operator">=</span> <span class="literal">true</span>; </span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; length; i++) &#123;</span><br><span class="line">            Invoker&lt;T&gt; invoker = invokers.get(i);</span><br><span class="line">            <span class="comment">// 获取当前这个invoker并发数</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">active</span> <span class="operator">=</span> RpcStatus.getStatus(invoker.getUrl(), invocation.getMethodName()).getActive(); </span><br><span class="line">            <span class="comment">// 获取权重</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">afterWarmup</span> <span class="operator">=</span> getWeight(invoker, invocation); <span class="comment">// Weight</span></span><br><span class="line"></span><br><span class="line">            <span class="comment">// 第一个元素的后或者 当前invoker并发数 小于 最小并发数（初始值是-1）</span></span><br><span class="line">            <span class="keyword">if</span> (leastActive == -<span class="number">1</span> || active &lt; leastActive) &#123; </span><br><span class="line">                <span class="comment">// 记录leastActive 为当前的活跃数</span></span><br><span class="line">                leastActive = active;</span><br><span class="line">                <span class="comment">//重置最小计数，基于当前最小计数重新计数</span></span><br><span class="line">                leastCount = <span class="number">1</span>;</span><br><span class="line">                <span class="comment">//在0下标出放入这个索引</span></span><br><span class="line">                leastIndexs[<span class="number">0</span>] = i; <span class="comment">// Reset</span></span><br><span class="line">                <span class="comment">// 总权重就是 当前invoker的权重</span></span><br><span class="line">                totalWeight = afterWarmup; </span><br><span class="line">                <span class="comment">//第一个权重</span></span><br><span class="line">                firstWeight = afterWarmup;</span><br><span class="line">                sameWeight = <span class="literal">true</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> (active == leastActive) &#123; <span class="comment">// 当前invoker的活跃数 与 leastActive相等</span></span><br><span class="line">                <span class="comment">// 记录索引位置，具有相同最小活跃数的计数器 +1</span></span><br><span class="line">                leastIndexs[leastCount++] = i;</span><br><span class="line">                <span class="comment">//总权重 =  总权重+当前权重</span></span><br><span class="line">                totalWeight += afterWarmup; <span class="comment">// Add this invoker&#x27;s weight to totalWeight.</span></span><br><span class="line">                <span class="keyword">if</span> (sameWeight &amp;&amp; i &gt; <span class="number">0</span></span><br><span class="line">                        &amp;&amp; afterWarmup != firstWeight) &#123;</span><br><span class="line">                    sameWeight = <span class="literal">false</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (leastCount == <span class="number">1</span>) &#123;<span class="comment">//如果我们恰好有一个调用程序具有最少的活动值，那么直接返回这个调用程序。</span></span><br><span class="line">            <span class="keyword">return</span> invokers.get(leastIndexs[<span class="number">0</span>]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 如果每个invoker有不同的权重 &amp;&amp;  totalWeight &gt; 0</span></span><br><span class="line">        <span class="keyword">if</span> (!sameWeight &amp;&amp; totalWeight &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="comment">// 在totalWeight 范围内随机一个值</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">offsetWeight</span> <span class="operator">=</span> random.nextInt(totalWeight) + <span class="number">1</span>;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; leastCount; i++) &#123;</span><br><span class="line">                <span class="comment">// 获取i位置的那个最小活跃 在invokers 里面的位置信息</span></span><br><span class="line">                <span class="type">int</span> <span class="variable">leastIndex</span> <span class="operator">=</span> leastIndexs[i];</span><br><span class="line">                <span class="comment">//offsetWeight - leastIndex 位置invoker的权重</span></span><br><span class="line">                offsetWeight -= getWeight(invokers.get(leastIndex), invocation);</span><br><span class="line">                <span class="comment">// offsetWeight 小于0的话</span></span><br><span class="line">                <span class="keyword">if</span> (offsetWeight &lt;= <span class="number">0</span>)</span><br><span class="line">                    <span class="comment">// 返回这个位置的这个</span></span><br><span class="line">                    <span class="keyword">return</span> invokers.get(leastIndex);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 具有相同权重或者是 总权重=0 的话就均匀返回</span></span><br><span class="line">        <span class="comment">// If all invokers have the same weight value or totalWeight=0, return evenly.</span></span><br><span class="line">        <span class="keyword">return</span> invokers.get(leastIndexs[random.nextInt(leastCount)]);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>最小活跃算法很好理解，第一个判断逻辑<code>leastActive == -1 || active &lt; leastActive</code>会处理第一个invoker或者是最不活跃的一个invoker，并把它存储到数组下标为0的位置上。也就是循环过程中会得到一个<code>leastIndexs</code>数组，记录了当前最不活跃的invoker list。</p>
+<p>后面的处理就是判断当前的list中是否有多个invoker或者存在不同权重的情况，这里的invoker选取就和<code>RandomLoadBalance</code>逻辑完全一致。</p>
+<h2 id="五、ConsistentHashLoadBalance"><a href="#五、ConsistentHashLoadBalance" class="headerlink" title="五、ConsistentHashLoadBalance"></a>五、ConsistentHashLoadBalance</h2><p>​    分布式系统中，可以通过Hash算法让固定的一部分请求落在同一台服务器上，这样每台服务器就会固定处理一部分请求，从而起到负载均衡的作用。</p>
+<p>​    但是普通的Hash算法缺乏伸缩性，当新增或者下线服务器机器时，简单通过散列的方式去负载均衡就会导致原有的映射关系大量失效。<strong>一致性Hash</strong>则通过Hash环进行了优化修改。</p>
+<h3 id="算法原理"><a href="#算法原理" class="headerlink" title="算法原理"></a>算法原理</h3><p>首先假设存在4台服务器分别为Ip1-4:</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20230311165622760.png" alt="image-20230311165622760"></p>
+<p>计算四台服务器ip地址对应的Hash值，计算出来的Hash值时0～最大正整数之间的一个值，对应hash环上的位置如上图所示👆</p>
+<p>当用户在客户端发起请求时，会根据hash计算路由规则，计算出一个Hash值，然后看这个Hash值落在了Hash环的哪个地方，再根据Hash值在Hash环上的位置顺时针找到距离最近的IP作为路由IP。</p>
+<p>如图：</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20230311165650267.png" alt="image-20230311165650267"></p>
+<p>假设此时ip3机器宕机,那么此时的请求分布情况应该是这样的👇：</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20230311170323499.png" alt="image-20230311170323499"></p>
+<p>原本的u1请求会从原来的ip3机器重新分配到ip4机器上，而之前没有分配到ip3机器上的请求不会受到影响。</p>
+<p>假设我们增加了一个ip5的机器，这个机器在hash环上的位置在ip2和ip3之间，那么在环上的分布情况应该如下图所示👇：</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20230311171214857.png" alt="image-20230311171214857"></p>
+<p>新增加的ip5的机器会分摊一部分ip3的机器的请求，如果u1的请求在ip5和ip2之间，那么请求就会重新分配到ip5机器上处理。</p>
+<h3 id="一致性Hash的特性"><a href="#一致性Hash的特性" class="headerlink" title="一致性Hash的特性"></a>一致性Hash的特性</h3><ul>
+<li><strong>单调性（Monotonicity）</strong>：单调性指在新服务器加入到系统中时，应当保证原有的请求可以被映射到原有和新增的服务器上，而不会映射到原有的其他服务器上。</li>
+<li><strong>分散性（Spread）</strong>：在分布式环境中，当客户端请求时可能不知道所有服务器的存在，可能只知道其中一部分服务器，从客户端看来，它看到的部分服务器会形成一个完整的Hash环。如果多个客户端都把部分服务器作为一个完整Hash环，那么可能会导致同一个用户的请求被路由到不同的服务器进行处理。这种情况显然是应该避免的，因为它不能保证同一个用户的请求落到同一台服务器。所谓分散性是指上述情况发生的严重程度。</li>
+<li><strong>平衡性（Balance）</strong>：平衡性指负载均衡，指客户端Hash后的请求应该能分散到不同的服务器上。</li>
+</ul>
+<h3 id="虚拟节点"><a href="#虚拟节点" class="headerlink" title="虚拟节点"></a>虚拟节点</h3><p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20230311173641982.png" alt="image-20230311173641982"></p>
+<p>假设经过计算后的Hash值在环上分布不均匀，那么就会导致上图的情况，会使得ip1机器处理更多的请求，而ip2和ip3只会负责少量的请求，这样就出现了一致性Hash的倾斜。</p>
+<p>解决一致性Hash倾斜问题的解决方式一种是简单粗暴的加机器解决，但是增加机器是有成本的，那么就需要虚拟节点来解决。如图，每台机器增加一个虚拟节点之后的一致性Hash环如图所示：</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20230311174009199.png" alt="image-20230311174009199"></p>
+<p>这样就使得请求相对均匀的分布在三台机器上。</p>
+<h3 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"> <span class="keyword">protected</span> &lt;T&gt; Invoker&lt;T&gt; <span class="title function_">doSelect</span><span class="params">(List&lt;Invoker&lt;T&gt;&gt; invokers, URL url, Invocation invocation)</span> &#123;</span><br><span class="line">     <span class="type">String</span> <span class="variable">methodName</span> <span class="operator">=</span> RpcUtils.getMethodName(invocation);</span><br><span class="line">     <span class="comment">// 拼接key</span></span><br><span class="line">     <span class="type">String</span> <span class="variable">key</span> <span class="operator">=</span> invokers.get(<span class="number">0</span>).getUrl().getServiceKey() + <span class="string">&quot;.&quot;</span> + methodName;</span><br><span class="line"></span><br><span class="line">     <span class="comment">// 计算hash</span></span><br><span class="line">     <span class="type">int</span> <span class="variable">identityHashCode</span> <span class="operator">=</span> System.identityHashCode(invokers);</span><br><span class="line"></span><br><span class="line">     <span class="comment">// 根据key 从缓存中获取ConsistentHashSelector</span></span><br><span class="line">     ConsistentHashSelector&lt;T&gt; selector = (ConsistentHashSelector&lt;T&gt;) selectors.get(key);</span><br><span class="line">     <span class="keyword">if</span> (selector == <span class="literal">null</span> || selector.identityHashCode != identityHashCode) &#123;</span><br><span class="line"></span><br><span class="line">         <span class="comment">// 创建ConsistentHashSelector 放入缓存中</span></span><br><span class="line">         selectors.put(key, <span class="keyword">new</span> <span class="title class_">ConsistentHashSelector</span>&lt;T&gt;(invokers, methodName, identityHashCode));</span><br><span class="line">         <span class="comment">// 获取新的selector</span></span><br><span class="line">         selector = (ConsistentHashSelector&lt;T&gt;) selectors.get(key);</span><br><span class="line">     &#125;</span><br><span class="line">     <span class="keyword">return</span> selector.select(invocation);</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<p>以上代码主要是通过invoker来计算获取对应的selector，主要的负载均衡逻辑应当都是由selector来实现的。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//   ConsistentHashSelector构造方法</span></span><br><span class="line">ConsistentHashSelector(List&lt;Invoker&lt;T&gt;&gt; invokers, String methodName, <span class="type">int</span> identityHashCode) &#123;</span><br><span class="line">            <span class="comment">// 虚拟的invoker</span></span><br><span class="line">            <span class="built_in">this</span>.virtualInvokers = <span class="keyword">new</span> <span class="title class_">TreeMap</span>&lt;Long, Invoker&lt;T&gt;&gt;();</span><br><span class="line">            <span class="comment">// hashcode</span></span><br><span class="line">            <span class="built_in">this</span>.identityHashCode = identityHashCode;</span><br><span class="line">            <span class="comment">// 获取url</span></span><br><span class="line">            <span class="type">URL</span> <span class="variable">url</span> <span class="operator">=</span> invokers.get(<span class="number">0</span>).getUrl();</span><br><span class="line"></span><br><span class="line">            <span class="comment">//获取hash.nodes ，缺省是160 可以指定</span></span><br><span class="line">            <span class="built_in">this</span>.replicaNumber = url.getMethodParameter(methodName, <span class="string">&quot;hash.nodes&quot;</span>, <span class="number">160</span>);</span><br><span class="line">            <span class="comment">// 获取hash.arguments 缺省是0 然后进行切割</span></span><br><span class="line">            String[] index = Constants.COMMA_SPLIT_PATTERN.split(url.getMethodParameter(methodName, <span class="string">&quot;hash.arguments&quot;</span>, <span class="string">&quot;0&quot;</span>));</span><br><span class="line">            argumentIndex = <span class="keyword">new</span> <span class="title class_">int</span>[index.length];</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; index.length; i++) &#123;</span><br><span class="line">                argumentIndex[i] = Integer.parseInt(index[i]);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">for</span> (Invoker&lt;T&gt; invoker : invokers) &#123;</span><br><span class="line">                <span class="comment">// 获取地址 双层嵌套循环</span></span><br><span class="line">                <span class="type">String</span> <span class="variable">address</span> <span class="operator">=</span> invoker.getUrl().getAddress();</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; replicaNumber / <span class="number">4</span>; i++) &#123;</span><br><span class="line">                    <span class="type">byte</span>[] digest = md5(address + i);</span><br><span class="line">                    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">h</span> <span class="operator">=</span> <span class="number">0</span>; h &lt; <span class="number">4</span>; h++) &#123;</span><br><span class="line">                        <span class="type">long</span> <span class="variable">m</span> <span class="operator">=</span> hash(digest, h);<span class="comment">//计算位置</span></span><br><span class="line">                        virtualInvokers.put(m, invoker);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br></pre></td></tr></table></figure>
+<p>这里主要是对每个method创建一个<code>virtualInvokers</code>的treeMap用来存储虚拟节点，key就是计算出来的hash值，value就是invoker。</p>
+<blockquote>
+<p>  这里的双层循环的具体算法：</p>
+<p>  <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Consistent_hashing">https://en.wikipedia.org/wiki/Consistent_hashing</a></p>
+</blockquote>
+<p><code>ConsistentHashSelector</code>的<code>invoker()</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> Invoker&lt;T&gt; <span class="title function_">select</span><span class="params">(Invocation invocation)</span> &#123;</span><br><span class="line">          <span class="comment">// 将参数转成key</span></span><br><span class="line">          <span class="type">String</span> <span class="variable">key</span> <span class="operator">=</span> toKey(invocation.getArguments());</span><br><span class="line">          <span class="type">byte</span>[] digest = md5(key);</span><br><span class="line">          <span class="keyword">return</span> selectForKey(hash(digest, <span class="number">0</span>));</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">private</span> String <span class="title function_">toKey</span><span class="params">(Object[] args)</span> &#123;</span><br><span class="line">          <span class="type">StringBuilder</span> <span class="variable">buf</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">StringBuilder</span>();</span><br><span class="line">          <span class="keyword">for</span> (<span class="type">int</span> i : argumentIndex) &#123;</span><br><span class="line">              <span class="keyword">if</span> (i &gt;= <span class="number">0</span> &amp;&amp; i &lt; args.length) &#123;</span><br><span class="line">                  buf.append(args[i]);<span class="comment">// 参数</span></span><br><span class="line">              &#125;</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="keyword">return</span> buf.toString();</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">private</span> Invoker&lt;T&gt; <span class="title function_">selectForKey</span><span class="params">(<span class="type">long</span> hash)</span> &#123;</span><br><span class="line">        <span class="comment">//tailMap 是返回键值大于或等于key的那部分 ，然后再取第一个</span></span><br><span class="line">          Map.Entry&lt;Long, Invoker&lt;T&gt;&gt; entry = virtualInvokers.tailMap(hash, <span class="literal">true</span>).firstEntry();</span><br><span class="line">          <span class="keyword">if</span> (entry == <span class="literal">null</span>) &#123;<span class="comment">//如果没有取到的话就说明hash就是最大的了，下面那个就是 treemap 第一个了</span></span><br><span class="line">              entry = virtualInvokers.firstEntry();</span><br><span class="line">          &#125;<span class="comment">// 返回对应的那个invoker</span></span><br><span class="line">          <span class="keyword">return</span> entry.getValue();</span><br><span class="line">      &#125;</span><br></pre></td></tr></table></figure>
+<p>主要是通过<code>tailMap()</code>方法找到返回键值大于或等于key的部分，然通过<code>firstEntry()</code>取第一个。</p>
+<h2 id="六、基于扩展接口实现自定义负载均衡策略"><a href="#六、基于扩展接口实现自定义负载均衡策略" class="headerlink" title="六、基于扩展接口实现自定义负载均衡策略"></a>六、基于扩展接口实现自定义负载均衡策略</h2><p>​     自定义扩展实现，首先需要实现LoadBalance接口，由于Dubbo本身提供了一个抽象类AbstractLoadBalance，所以我们可以直接继承该类并且实现<code>doSelect()</code>方法：<br><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20230311182131266.png" alt="image-20230311182131266"></p>
+<p>以上！</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>liuchanglin</span>
+                    </p>
+                
+                
+                
+                
+                     <p class="copyright-item">
+                         <span>Slogan:</span>
+                         <span><strong>我惭携宝剑，只为看山来.</strong></span>
+                     </p>
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tags/Java/"># Java</a>
+                    
+                        <a href="/tags/Dubbo/"># Dubbo</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+            
+            <a class="next" rel="next" href="/2023/02/05/Lag-Compensation-%E7%BD%91%E7%BB%9C%E6%B8%B8%E6%88%8F%E4%B8%AD%E7%9A%84%E5%BB%B6%E8%BF%9F%E8%A1%A5%E5%81%BF/">Lag Compensation - 网络游戏中的延迟补偿</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+        </div>
+        <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© liuchanglin | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+</html>

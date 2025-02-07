@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="liuchanglin">
+
+
+
+
+
+<title>hexo博客的部署与图床使用 | liuchanglin &#39;s blog</title>
+
+
+
+    <link rel="icon" href="/img.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body>
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">LiuChanglin&#39;s Blog</a></div>
+            <div class="menu navbar-right">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+                <input id="switch_default" type="checkbox" class="switch_default">
+                <label for="switch_default" class="toggleBtn"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">LiuChanglin&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if(toggleMenu.classList.contains("active")){
+           toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        }else{
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+        <div class="main">
+            <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    document.ready(
+        function () {
+            tocbot.init({
+                tocSelector: '.tocbot-list',
+                contentSelector: '.post-content',
+                headingSelector: 'h1, h2, h3, h4, h5',
+                collapseDepth: 1,
+                orderedList: false,
+                scrollSmooth: true,
+            })
+        }
+    )
+
+    function expand_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 6,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "collapse_toc()");
+        b.innerHTML = "Collapse all"
+    }
+
+    function collapse_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 1,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "expand_toc()");
+        b.innerHTML = "Expand all"
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">hexo博客的部署与图床使用</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">liuchanglin</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">May 23, 2020&nbsp;&nbsp;16:25:34</a>
+                        </span>
+                    
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <blockquote>
+<p>将博客用hexo搭建好之后，我们应该明白，我们的博客不能一直处于本地环境启动，我们需要把它作为一个可以公共访问的网站来使用.</p>
+<p>并且作为支持markdown语法的博客，在写博文时插入图片也需要图床的设置。</p>
+</blockquote>
+<h2 id="一、使用GitHub-pages部署hexo博客"><a href="#一、使用GitHub-pages部署hexo博客" class="headerlink" title="一、使用GitHub pages部署hexo博客"></a>一、使用GitHub pages部署hexo博客</h2><h3 id="新建仓库"><a href="#新建仓库" class="headerlink" title="新建仓库"></a>新建仓库</h3><p>​    首先第一步，我们需要登录GitHub创建一个仓库，来作为我们博客文章及其他文件的存储地址. 在我们更新或者获取博客时，只需要对这个仓库进行commit等git操作即可完成更新、获取等操作.</p>
+<p><strong>注意</strong></p>
+<p>​    新建仓库的仓库名需要格外注意，我们新建仓库名字必须满足：</p>
+<blockquote>
+<p>“GitHub昵称”.github.io</p>
+</blockquote>
+<p>​    比如 我的GitHub昵称是<code>MagicStarLIN</code>，那么我的仓库名就应该如图所示：</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20200523183841443.png" alt="image-20200523183841443" style="zoom:50%;" /></p>
+<p>仓库地址：<a target="_blank" rel="noopener" href="https://github.com/MagicStarLIN/MagicStarLIN.github.io.git">https://github.com/MagicStarLIN/MagicStarLIN.github.io.git</a></p>
+<h3 id="安装git插件"><a href="#安装git插件" class="headerlink" title="安装git插件"></a>安装git插件</h3><p>​    仓库新建完成之后，我们回到我们的hexo目录文件夹下，我们需要安装一个git deploy的插件，这里借助cnpm来完成安装，只需要一个命令。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ cnpm install --save hexo-deployer-git</span><br></pre></td></tr></table></figure>
+<h3 id="设置-config-yml"><a href="#设置-config-yml" class="headerlink" title="设置_config.yml"></a>设置_config.yml</h3><p>插件完成安装之后，我们需要对yml配置文件进行配置.</p>
+<p>配置主要会在_config.yml文件中的deploy一级属性下进行配置.这里我的github仓库地址为<code>https://github.com/MagicStarLIN/MagicStarLIN.github.io.git</code></p>
+<p>初始的_config.yml文件的deploy属性为：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Deployment</span></span><br><span class="line"><span class="comment">## Docs: https://hexo.io/docs/deployment.html</span></span><br><span class="line"><span class="attr">deploy:</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">&#x27;&#x27;</span></span><br></pre></td></tr></table></figure>
+<p>基本处于什么都没有配置的状态，这里我直接展示我配置之后的yml文件：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Deployment</span></span><br><span class="line"><span class="comment">## Docs: https://hexo.io/docs/deployment.html</span></span><br><span class="line"><span class="attr">deploy:</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">repo:</span> <span class="string">https://github.com/MagicStarLIN/MagicStarLIN.github.io.git</span></span><br><span class="line">  <span class="attr">branch:</span> <span class="string">master</span></span><br></pre></td></tr></table></figure>
+<h3 id="部署到远端"><a href="#部署到远端" class="headerlink" title="部署到远端"></a>部署到远端</h3><p>使用hexo的命令实现部署至GitHub pages</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo d</span><br></pre></td></tr></table></figure>
+<p>如果之前没有配置过git账号和密码，那么这里第一次部署应该会要求输入GitHub的账号和密码.</p>
+<p>至此，成功之后，就已经完成了博客的部署.我们可以访问<code>&quot;GitHub昵称&quot;.github.io</code>url来直接访问自己的hexo博客.</p>
+<h2 id="二、配置博客图床"><a href="#二、配置博客图床" class="headerlink" title="二、配置博客图床"></a>二、配置博客图床</h2><p>​    我们在写博客的时候，经常需要插入一些图片(比如上面的GitHub仓库截图)，这个时候因为markdown语法的图片插入是基于url的链接访问的. 比如我使用的是<strong>Typora编辑器</strong>来写markdown文档，那么他的图片会自动存储到电脑的某个固定文件夹中，我们在本地查看的markdown文档中的图片，就是访问的电脑中保存的图片. 那么当我们部署到GitHub上的时候就不能查看到博文中的图片了，这里我们就需要借助搭建好的<strong>图床</strong>来进行图片的访问.</p>
+<blockquote>
+<p>图床一般是指储存图片的服务器，有国内和国外之分。国外的图床由于有空间距离等因素决定访问速度很慢影响图片显示速度。国内也分为单线空间、多线空间和cdn加速三种。</p>
+</blockquote>
+<h3 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h3><ul>
+<li>markdown文档编辑器：Typora</li>
+<li>图床：阿里云对象存储OSS</li>
+<li>图片上传工具：PicGo</li>
+</ul>
+<h3 id="图床搭建"><a href="#图床搭建" class="headerlink" title="图床搭建"></a>图床搭建</h3><p>首先购买阿里云的OSS服务.</p>
+<p>访问<a target="_blank" rel="noopener" href="https://www.aliyun.com/product/oss/">阿里云对象存储OSS官网</a>，选择折扣套餐.</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20200523213310883.png" alt="image-20200523213310883" style="zoom:50%;" /></p>
+<p>我购买的服务如图，大概一年9元.</p>
+<p>之后进入管理控制台，在Bucket管理中选择创建Bucket.</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20200523213700289.png" alt="image-20200523213700289" style="zoom:50%;" /></p>
+<p>这里我选择的Bucket具体细节如图，填写好Bucket名称之后，即可完成创建.</p>
+<h3 id="PicGo配置"><a href="#PicGo配置" class="headerlink" title="PicGo配置"></a>PicGo配置</h3><p>下载PicGo，官方网站：<a target="_blank" rel="noopener" href="https://molunerfinn.com/PicGo/">https://molunerfinn.com/PicGo/</a>. 在官方网站选择下载，之后选择对应版本：</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20200523214053775.png" alt="image-20200523214053775" style="zoom:50%;" /></p>
+<p>这里mac系统直接下载.dmg文件即可</p>
+<p>下载完成后，我们需要对其进行配置，链接至我们的阿里云OSS</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/截屏2020-05-23 下午9.46.58.png" alt="截屏2020-05-23 下午9.46.58" style="zoom:50%;" /></p>
+<ul>
+<li><p>KeyId/KeySecret：阿里云OSS管理控制台 —&gt; Access Key —&gt; 使用Accesskey</p>
+</li>
+<li><p>存储空间名：即你刚刚创建的Bucket名称</p>
+</li>
+<li><p>存储区域：查看你的Bucket详细信息：</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20200523215241237_副本.png" alt="image-20200523215241237_副本" style="zoom:50%;" /></p>
+</li>
+<li><p>存储路径：在你的Bucket管理界面下，选择文件管理：</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20200523215521983.png" alt="image-20200523215521983" style="zoom:50%;" /></p>
+<p>将文件名保存为存储路径，注意需要用“/”做结尾</p>
+</li>
+</ul>
+<p>至此，PicGo配置完成.</p>
+<h3 id="Typora配置"><a href="#Typora配置" class="headerlink" title="Typora配置"></a>Typora配置</h3><p>打开Typora偏好设置：</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20200523225811663.png" alt="image-20200523225811663" style="zoom:50%;" /></p>
+<p>配置如图.</p>
+<p>完成以上配置后，我么在使用Typora编写文档时，只需要对图片进行右键—&gt;上传图像即可. </p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>liuchanglin</span>
+                    </p>
+                
+                
+                
+                
+                     <p class="copyright-item">
+                         <span>Slogan:</span>
+                         <span><strong>我惭携宝剑，只为看山来.</strong></span>
+                     </p>
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tags/tools/"># tools</a>
+                    
+                        <a href="/tags/hexo/"># hexo</a>
+                    
+                        <a href="/tags/blog/"># blog</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2020/06/07/HashMap%E7%9A%84%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86-%E4%B8%80-%EF%BC%9AHash%E7%AE%97%E6%B3%95/">HashMap的工作原理(一)：Hash算法</a>
+            
+            
+            <a class="next" rel="next" href="/2020/05/21/%E4%BD%BF%E7%94%A8hexo%E6%90%AD%E5%BB%BA%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2/">使用hexo搭建个人博客</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+        </div>
+        <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© liuchanglin | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+</html>

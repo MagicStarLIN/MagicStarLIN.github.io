@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="liuchanglin">
+
+
+
+
+
+<title>workReview:新服务的创建&amp;部署&amp;开发 | liuchanglin &#39;s blog</title>
+
+
+
+    <link rel="icon" href="/img.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body>
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">LiuChanglin&#39;s Blog</a></div>
+            <div class="menu navbar-right">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+                <input id="switch_default" type="checkbox" class="switch_default">
+                <label for="switch_default" class="toggleBtn"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">LiuChanglin&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if(toggleMenu.classList.contains("active")){
+           toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        }else{
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+        <div class="main">
+            <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    document.ready(
+        function () {
+            tocbot.init({
+                tocSelector: '.tocbot-list',
+                contentSelector: '.post-content',
+                headingSelector: 'h1, h2, h3, h4, h5',
+                collapseDepth: 1,
+                orderedList: false,
+                scrollSmooth: true,
+            })
+        }
+    )
+
+    function expand_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 6,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "collapse_toc()");
+        b.innerHTML = "Collapse all"
+    }
+
+    function collapse_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 1,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "expand_toc()");
+        b.innerHTML = "Expand all"
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">workReview:新服务的创建&amp;部署&amp;开发</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">liuchanglin</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">February 15, 2021&nbsp;&nbsp;2:44:42</a>
+                        </span>
+                    
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <h2 id="零、写在前面"><a href="#零、写在前面" class="headerlink" title="零、写在前面"></a>零、写在前面</h2><p>​    现在是2021年的2月份了，思绪回到两个月之前，2020年圣诞节前，老大安排任务——迁移老项目中的邮件下发相关业务至一个mail的新服务中。虽然当时刚刚听到这个任务，觉得无非是接口代码的迁移，但是上手之后发现这个任务包括了服务的新建、部署、以及乱七八糟的配置，还有代码设计上需要做的优化。</p>
+<p>​    两个月以来，接口迁移和两个版本的迭代需求与其他乱七八糟的事情并行进行，而且这两个月公司一直是ab班模式进行工作。幸运的是mail迁移任务算是比较圆满的完成了。年后回厂就该考虑真正进行灰度上线相关事宜，希望接下来的上线、扩量等后续工作不要出现问题🙏。</p>
+<h2 id="一、代码设计——拦截器模式"><a href="#一、代码设计——拦截器模式" class="headerlink" title="一、代码设计——拦截器模式"></a>一、代码设计——拦截器模式</h2><p>​    首先关于邮件下发这一个需求，需要在设计上满足几个功能：</p>
+<ul>
+<li>邮箱域名、邮箱地址黑名单屏蔽</li>
+<li>发送账号的路由</li>
+<li>发送失败后切换从SendCloud发送转换为Aliyun发送</li>
+</ul>
+<p>​    为了保证这些功能彼此之间保持低耦合高内聚，便于之后的扩展，就需要一个比较好的设计模式来完成它（当然这里也是老大要求的），在圣诞节下班的路上，我首先联想到Netty源码中在一个pipeline中组装多个Handler的方式，来扩展Netty收发二进制流的操作，接着我又想到之前chat服务中的IM即时通讯中收发消息采用的拦截器模式，多个Filter组成一个FiltreChain的方式对Message进行过滤，最后经过与老大交流，老大一开始也是想让我采用FilterChain的方式来进行，算是正中下怀。</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20210215034400406.png" alt="image-20210215034400406"></p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20210215034622758.png" alt="image-20210215034622758">    </p>
+<p>​    最终的Filter结构如上，创建了发送前调用的<code>beforeSend</code>方法和发送后调用的<code>afterSend</code>方法，以及一个FilterAdapter来对这两个接口添加默认实现，将三个实现类组装到FilterChain中去，发送邮件时进行链式的调用。</p>
+<blockquote>
+<p>即使是现在我仍然认为这样的设计存在很多的漏洞，发送的前置和后置参数应当选择什么？返回值应该是什么？</p>
+<p>尽管如此我也明白，一个好的设计从来不是一蹴而就，是不断的修改、调整出来的。</p>
+</blockquote>
+<h2 id="二、多模块项目—模块之间的依赖关系"><a href="#二、多模块项目—模块之间的依赖关系" class="headerlink" title="二、多模块项目—模块之间的依赖关系"></a>二、多模块项目—模块之间的依赖关系</h2><p>​    一个简单的java项目通常只有一个模块，比如：</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20210215161108423.png" alt="image-20210215161108423"></p>
+<p>​    但是，一般企业级的开发项目都会是存在多个模块，比如：</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20210215161158145.png" alt="image-20210215161158145"></p>
+<p>​    mail项目就有<code>api-client</code>、<code>api-def</code>、<code>api-impl</code>、<code>server</code>这些模块，这些模块通过maven的父子依赖来组成依赖关系，子pom依赖父pom。</p>
+<p>​    随着业务量的增长，单一模块的项目可能会存在这样的问题：</p>
+<ul>
+<li>不同业务之间的代码互相耦合，难以区分且快速定位问题</li>
+<li>增加开发成本，入手难度增高</li>
+<li>开发界线模糊，不易定位到具体负责人</li>
+<li>对于有特殊需求的模块无法拆解，比如：上传 maven 仓库只需要部分代码即可，但由于只有 1 个模块，不得不全部上传。</li>
+</ul>
+<p>进行模块拆分，可以将这些问题改善、解决。</p>
+<hr>
+<p>到现在为止我还没有找到一个规范 ，具体该如何拆分这些模块，是按照业务去拆分，亦或者是按照代码的功能来拆分。我厂采用的拆分大体如下：</p>
+<ul>
+<li>Api-client 通常是dubbo接口暴露被引用为jar包的模块</li>
+<li>Api-def 接口的定义、某些常量实体类等</li>
+<li>Api-impl 接口的实现</li>
+<li>Api-cache 缓存相关</li>
+<li>Api-common 一些配置、常量、utils</li>
+<li>consumer mq的消费者或者Listener</li>
+<li>schedule 定时任务</li>
+<li>Server web服务</li>
+<li>Service-def Service层</li>
+<li>Service-impl Service层的具体实现</li>
+</ul>
+<blockquote>
+<p>模块之间的依赖关系 api模块只依赖最基础的三方模块，不能依赖其所在项目的模块，防止出现循环依赖</p>
+<p>service模块需要依赖api模块 以及相应的common模块（基础的常用工具类或者result封装对象可以写在这里）和mapper模块（数据库的操作模块，也可以叫manager模块） 以及pojo模块（最基础的实体模块，其不应该再依赖任何模块），</p>
+<p>common模块和mapper模块以及pojo模块， 在comsumer项目中有，通过install命令推到maven的本地仓库中</p>
+<p>provider项目可以通过引入maven依赖的形式 去使用这些jar</p>
+<p>启动类模块中需要依赖service模块，因为需要在启动的时候加载这些模块</p>
+<p>🌚唯一一个从网上找到比较相关的规范</p>
+</blockquote>
+<h2 id="三、Dynamic-动态属性的应用"><a href="#三、Dynamic-动态属性的应用" class="headerlink" title="三、Dynamic 动态属性的应用"></a>三、Dynamic 动态属性的应用</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Set&lt;String&gt; filterDomains = Collections.newSetFromMap(<span class="keyword">new</span> <span class="title class_">ConcurrentHashMap</span>&lt;String, Boolean&gt;());</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Set&lt;String&gt; filterAddress = Collections.newSetFromMap(<span class="keyword">new</span> <span class="title class_">ConcurrentHashMap</span>&lt;String, Boolean&gt;());</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">DynamicStringProperty</span> <span class="variable">domains</span> <span class="operator">=</span> DynamicPropertyFactory.getInstance()</span><br><span class="line">            .getStringProperty(DBDomainConfiguration.MAIL_BLACK_DOMAIN, <span class="string">&quot;&quot;</span>, <span class="keyword">new</span> <span class="title class_">Runnable</span>() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                    refreshFilterDomainsSet();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">DynamicStringProperty</span> <span class="variable">address</span> <span class="operator">=</span> DynamicPropertyFactory.getInstance()</span><br><span class="line">            .getStringProperty(DBDomainConfiguration.MAIL_BLACK_ADDRESS, <span class="string">&quot;&quot;</span>, <span class="keyword">new</span> <span class="title class_">Runnable</span>() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                    refreshFilterAddressSet();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">......</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line">     <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title function_">refreshAliyunDomainSet</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">confValue</span> <span class="operator">=</span> aliyunWhiteDomains.get();</span><br><span class="line">        log.info(<span class="string">&quot;refresh aliyunWhiteDomainSet [&quot;</span> + confValue + <span class="string">&quot;]&quot;</span>);</span><br><span class="line">        String[] whiteDomains = StringUtils.split(confValue, <span class="string">&#x27;,&#x27;</span>);</span><br><span class="line">        aliyunDomains.clear();</span><br><span class="line">        <span class="keyword">if</span> (ArrayUtils.isNotEmpty(whiteDomains)) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; whiteDomains.length; i++) &#123;</span><br><span class="line">                <span class="type">String</span> <span class="variable">whiteDomain</span> <span class="operator">=</span> StringUtils.lowerCase(StringUtils.trimToNull(whiteDomains[i]));</span><br><span class="line">                <span class="keyword">if</span> (whiteDomain != <span class="literal">null</span>) &#123;</span><br><span class="line">                    log.info(<span class="string">&quot;add aliyunWhiteDomain &quot;</span> + whiteDomain);</span><br><span class="line">                    aliyunDomains.add(whiteDomain);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title function_">refreshFilterDomainsSet</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">value</span> <span class="operator">=</span> domains.get();</span><br><span class="line">        log.info(<span class="string">&quot;refresh filterDomains [&quot;</span> + value + <span class="string">&quot;]&quot;</span>);</span><br><span class="line">        String[] filter = StringUtils.split(value, <span class="string">&#x27;,&#x27;</span>);</span><br><span class="line">        filterDomains.clear();</span><br><span class="line">        <span class="keyword">if</span> (ArrayUtils.isNotEmpty(filter)) &#123;</span><br><span class="line">            <span class="keyword">for</span> (String s : filter) &#123;</span><br><span class="line">                <span class="type">String</span> <span class="variable">blackDomain</span> <span class="operator">=</span> StringUtils.lowerCase(StringUtils.trimToNull(s));</span><br><span class="line">                <span class="keyword">if</span> (blackDomain != <span class="literal">null</span>) &#123;</span><br><span class="line">                    log.info(<span class="string">&quot;add filterDomains &quot;</span> + blackDomain);</span><br><span class="line">                    filterDomains.add(blackDomain);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br></pre></td></tr></table></figure>
+<p>​    这里我定义了两个Map来存放地址和域名的黑名单列表，每次发送前进行校验来判断是否命中，再决定是否继续发送。</p>
+<p>​    邮件的域名和地址黑名单存放在mysql表格中，但是如果每次发送都要查一遍表进行校验，就显得很蠢，这个时候由Netflix推出的Archaius提供了这样的一个解决方案；Dynamic动态属性，如图中，我定义了两个<code>DynamicStringProperty</code>的成员变量<code>address</code>和<code>domains</code>,当我在项目运行时，将mysql数据库中的数据进行修改，这两个成员变量就会发生变化，<strong>保持与数据库中的数据一致</strong>。而这里可以定义一个回调方法，在成员变量发生变化时调用(我这里的回调时对存放地址和域名的黑名单进行refresh操作)。</p>
+<p>​    附上一个<code>DynamicStringProperty</code>对读取MySql数据库的配置。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.zhipin.mail.config;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> com.google.common.collect.Maps;</span><br><span class="line"><span class="keyword">import</span> com.netflix.config.PollResult;</span><br><span class="line"><span class="keyword">import</span> com.netflix.config.PolledConfigurationSource;</span><br><span class="line"><span class="keyword">import</span> com.zhipin.mail.dao.EmailBlackAddressDAO;</span><br><span class="line"><span class="keyword">import</span> com.zhipin.mail.dao.EmailBlackDomainDAO;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.List;</span><br><span class="line"><span class="keyword">import</span> java.util.Map;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">DBDomainConfiguration</span> <span class="keyword">implements</span> <span class="title class_">PolledConfigurationSource</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">MAIL_BLACK_DOMAIN</span> <span class="operator">=</span> <span class="string">&quot;email_black_domain&quot;</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">MAIL_BLACK_ADDRESS</span> <span class="operator">=</span> <span class="string">&quot;email_black_address&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> EmailBlackDomainDAO emailBlackDomainDAO;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> EmailBlackAddressDAO emailBlackAddressDAO;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">DBDomainConfiguration</span><span class="params">(EmailBlackDomainDAO emailBlackDomainDAO, EmailBlackAddressDAO emailBlackAddressDAO)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.emailBlackDomainDAO = emailBlackDomainDAO;</span><br><span class="line">        <span class="built_in">this</span>.emailBlackAddressDAO = emailBlackAddressDAO;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> PollResult <span class="title function_">poll</span><span class="params">(<span class="type">boolean</span> initial, Object checkPoint)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        Map&lt;String, Object&gt; map = load();</span><br><span class="line">        <span class="keyword">return</span> PollResult.createFull(map);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Map&lt;String, Object&gt; <span class="title function_">load</span><span class="params">()</span> &#123;</span><br><span class="line">        List&lt;String&gt; blackDomainList = emailBlackDomainDAO.getConfigDomains();</span><br><span class="line">        List&lt;String&gt; blackAddressList = emailBlackAddressDAO.getConfigAddress();</span><br><span class="line">        Map&lt;String, Object&gt; result = Maps.newHashMap();</span><br><span class="line">        <span class="type">String</span> <span class="variable">domains</span> <span class="operator">=</span> String.join(<span class="string">&quot;,&quot;</span>, blackDomainList);</span><br><span class="line">        <span class="type">String</span> <span class="variable">address</span> <span class="operator">=</span> String.join(<span class="string">&quot;,&quot;</span>, blackAddressList);</span><br><span class="line">        result.put(MAIL_BLACK_DOMAIN, domains);</span><br><span class="line">        result.put(MAIL_BLACK_ADDRESS, address);</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>​    除了感知Mysql数据库中数据的变化来更新动态属性的方式之外，Archaius的动态属性还可以配置为启动项、properties配置等许多方式，这里就不多说了，之后有机会可以单独去研究。</p>
+<h2 id="四、部署问题相关"><a href="#四、部署问题相关" class="headerlink" title="四、部署问题相关"></a>四、部署问题相关</h2><p>​    时间来到开发结束，部署至开发环境，这个过程里问题不大，主要是发生了两个问题。</p>
+<p><strong>#1 run脚本问题</strong></p>
+<p>​    这个问题很难讲，我仔细检查run脚本，并没有发现什么不合理的地方，经过查阅资料看到网上有人提到<strong>shell脚本在Linux环境和普通ide开发的环境下存在字符集不一致的情况</strong>。这里我采用的解决方式是，把run脚本复制，在vim编辑模式下粘贴一遍，神奇的奏效了，可能问题确实发生在这里吧。。。。</p>
+<p><strong>#2 maven打包配置</strong></p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-maven-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">mainClass</span>&gt;</span>com.zhipin.mail.MailBootstrap<span class="tag">&lt;/<span class="name">mainClass</span>&gt;</span> // Mailootstrap </span><br><span class="line">        <span class="tag">&lt;<span class="name">executable</span>&gt;</span>true<span class="tag">&lt;/<span class="name">executable</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">finalName</span>&gt;</span>$&#123;service.name&#125;<span class="tag">&lt;/<span class="name">finalName</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">executions</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">execution</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">goals</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">goal</span>&gt;</span>repackage<span class="tag">&lt;/<span class="name">goal</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">goals</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">execution</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">executions</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>​    部署方式采用maven打包成jar包，然后上传到服务器上运行的方式，这里的maven配置之前mainClass书写错误，导致jar包在运行的情况下找不到启动的main入口。可以想到，<strong>maven打包SpringBoot后jar包的启动入口就在这个<code>mainClass</code>标签下的main方法上</strong>。</p>
+<h2 id="五、非Spring容器中Compent自动装配失败问题"><a href="#五、非Spring容器中Compent自动装配失败问题" class="headerlink" title="五、非Spring容器中Compent自动装配失败问题"></a>五、非Spring容器中Compent自动装配失败问题</h2><p>​    这个问题有点类似之前写过的<code>Spring自动装配的一次踩坑经历</code>中提到的问题。</p>
+<p>​    是这样，存在这样一个类<code>CheckAndRetryTask</code>这个类的主要作用是邮件发送后的检验相关逻辑，而我每次发送完邮件都会new一个task，将它丢到线程池中去处理，而这个经过new创建的类中有一个标注了<code>@Autowired</code>的成员变量。这样的方式这个成员变量无法通过自动装配的方式来赋值，所以每次都会有NullPointerException。</p>
+<p>​    这里我采用的方式是将自动装配方式改成直接从Spring容器中获取，这样就不会存在空指针异常了。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> ResumeManager resumeManager;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> 修改为👇</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">		<span class="keyword">private</span> <span class="type">ResumeManager</span> <span class="variable">resumeManager</span> <span class="operator">=</span> (ResumeManager) ApplicationContextUtils.getBean(<span class="string">&quot;resumeManager&quot;</span>);</span><br></pre></td></tr></table></figure>
+<p>附上一个<code>ApplicationContextUtils</code>代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> lombok.extern.slf4j.Slf4j;</span><br><span class="line"><span class="keyword">import</span> org.springframework.beans.BeansException;</span><br><span class="line"><span class="keyword">import</span> org.springframework.context.ApplicationContext;</span><br><span class="line"><span class="keyword">import</span> org.springframework.context.ApplicationContextAware;</span><br><span class="line"><span class="keyword">import</span> org.springframework.stereotype.Component;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Slf4j</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ApplicationContextUtils</span> <span class="keyword">implements</span> <span class="title class_">ApplicationContextAware</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> ApplicationContext applicationContext;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setApplicationContext</span><span class="params">(ApplicationContext applicationContext)</span> <span class="keyword">throws</span> BeansException &#123;</span><br><span class="line">        ApplicationContextUtils.applicationContext = applicationContext;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> Object <span class="title function_">getBean</span><span class="params">(String name)</span> &#123;</span><br><span class="line">        <span class="type">Object</span> <span class="variable">object</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">        object = ApplicationContextUtils.applicationContext.getBean(name);</span><br><span class="line">        <span class="keyword">return</span> object;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> &lt;T&gt; T <span class="title function_">getBean</span><span class="params">(Class&lt;T&gt; clazz)</span> &#123;</span><br><span class="line">        <span class="type">T</span> <span class="variable">object</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">        object = ApplicationContextUtils.applicationContext.getBean(clazz);</span><br><span class="line">        <span class="keyword">return</span> object;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> &lt;T&gt; T <span class="title function_">getBean</span><span class="params">(String name, Class&lt;T&gt; requiredType)</span> &#123;</span><br><span class="line">        <span class="type">T</span> <span class="variable">object</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">        object = ApplicationContextUtils.applicationContext.getBean(name, requiredType);</span><br><span class="line">        <span class="keyword">return</span> object;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="type">boolean</span> <span class="title function_">containsBean</span><span class="params">(String name)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> ApplicationContextUtils.applicationContext.containsBean(name);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> String[] getAliases(String name) &#123;</span><br><span class="line">        String[] s = <span class="literal">null</span>;</span><br><span class="line">        s = ApplicationContextUtils.applicationContext.getAliases(name);</span><br><span class="line">        <span class="keyword">return</span> s;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="六、dubbo接口引用"><a href="#六、dubbo接口引用" class="headerlink" title="六、dubbo接口引用"></a>六、dubbo接口引用</h2><p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20210215174500237.png" alt="image-20210215174500237"></p>
+<p>​    dubbo接口引用是将引用的配置写在<code>api-client</code>模块下，然后服务上游调用方直接引用项目deploy好的jar包的这个client模块就可以了。</p>
+<p>引用配置：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version=<span class="string">&quot;1.0&quot;</span> encoding=<span class="string">&quot;UTF-8&quot;</span> ?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">beans</span> <span class="attr">xmlns</span>=<span class="string">&quot;http://www.springframework.org/schema/beans&quot;</span></span></span><br><span class="line"><span class="tag">       <span class="attr">xmlns:xsi</span>=<span class="string">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span></span></span><br><span class="line"><span class="tag">       <span class="attr">xmlns:dubbo</span>=<span class="string">&quot;http://code.alibabatech.com/schema/dubbo&quot;</span></span></span><br><span class="line"><span class="tag">       <span class="attr">xsi:schemaLocation</span>=<span class="string">&quot;http://www.springframework.org/schema/beans</span></span></span><br><span class="line"><span class="string"><span class="tag">                http://www.springframework.org/schema/beans/spring-beans.xsd</span></span></span><br><span class="line"><span class="string"><span class="tag">                http://code.alibabatech.com/schema/dubbo</span></span></span><br><span class="line"><span class="string"><span class="tag">                http://code.alibabatech.com/schema/dubbo/dubbo.xsd&quot;</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">dubbo:registry</span> <span class="attr">id</span>=<span class="string">&quot;mailRegistry&quot;</span> <span class="attr">protocol</span>=<span class="string">&quot;zookeeper&quot;</span> <span class="attr">address</span>=<span class="string">&quot;$&#123;zk_registry&#125;&quot;</span></span></span><br><span class="line"><span class="tag">                    <span class="attr">group</span>=<span class="string">&quot;$&#123;mail.dubbo.registry.group:zp_dubbo/mail&#125;&quot;</span> <span class="attr">file</span>=<span class="string">&quot;dubbo-registry-mail-provider.file&quot;</span>/&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">dubbo:reference</span> <span class="attr">id</span>=<span class="string">&quot;resumeMailApi&quot;</span> <span class="attr">interface</span>=<span class="string">&quot;com.zhipin.mail.api.ResumeMailApi&quot;</span></span></span><br><span class="line"><span class="tag">                     <span class="attr">registry</span>=<span class="string">&quot;mailRegistry&quot;</span>  <span class="attr">version</span>=<span class="string">&quot;1.0.0&quot;</span> <span class="attr">check</span>=<span class="string">&quot;false&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">dubbo:reference</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;/<span class="name">beans</span>&gt;</span>	</span><br></pre></td></tr></table></figure>
+<h2 id="七、Jenkins新建任务"><a href="#七、Jenkins新建任务" class="headerlink" title="七、Jenkins新建任务"></a>七、Jenkins新建任务</h2><p>​        是第一次在Jenkins上新建任务，其实现在回头来看也都比较简单，具体大概也就是一些参数的配置，比如git地址、分支名称、服务名称，具体要留意的一部分应该是Post Steps这个部分，这里采用shell脚本的方式来对已经经过Jenkins打包好的项目进行上传到服务器，然后运行的操作。</p>
+<p><strong>Command</strong></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">for i in $&#123;service[*]&#125;</span><br><span class="line">do</span><br><span class="line"> JAR_NAME=`find $WORKSPACE/ -name &quot;$i.jar&quot;|grep -v SNAPSHOT`</span><br><span class="line">  scp -P port  $JAR_NAME work@host:/data/$i</span><br><span class="line">  ssh -p port  work@host &quot;cd /data/$i;svc -dk .;svc -u .;&quot;</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+<p>​    这里的shell主要作用是，循环遍历上面配置过的需要进行部署的服务名称，然后找到对应已经打包好的jar包，将它通过scp的方式上传到服务器的对应目录中，然后连接对应服务器，通过daemontools的方式进行重启。</p>
+<blockquote>
+<p>这里其实有个问题，如果当前项目是第一次部署，那么他的run脚本以及打包后的文件中的其他内容都不会上传到服务器上，实际上只会单独上传一个jar包，而当我们没有run脚本时，项目就无法启动。</p>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">for i in $&#123;service[*]&#125;</span><br><span class="line">do</span><br><span class="line">	JAR_NAME=`find $WORKSPACE/ -name &quot;*$i*.zip&quot;`</span><br><span class="line">	ssh -p port work@host &quot;cd /data/$i; svc -dk .; rm -rf lib *.zip&quot;</span><br><span class="line">	scp -P port $JAR_NAME work@host:/data/$i</span><br><span class="line">	ssh -p port work@host &quot;cd /data/$i; unzip -o *.zip -x run; svc -u .;&quot;</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+<p>​    这个shell就正常多了，首先将服务器上的服务进程杀死，然后上传打包好的整个zip包，然后在服务器上解压、启动。</p>
+<h2 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h2><p>​    零零碎碎的两个月，零零碎碎的一堆问题，这些问题现在看来简单，解决方式清晰明了，但是在当时都是耗费了我很多心思，解决后有很大收获的问题；其实除了上述的这些问题之外也有很多没有写进来的问题，比如：</p>
+<ul>
+<li>RateLimiter qps限制器</li>
+<li>mqConsumer 配置相关</li>
+<li>Spring bean的配置</li>
+</ul>
+<p>​    这些其他问题可能是我还没有解决的很完善，或者是采用了公司现成的解决方案，也有些是不值一提的问题，不管怎样这些问题都是很有价值的问题，至少对现在的我是这样….</p>
+<p>​    <strong>以上！</strong></p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>liuchanglin</span>
+                    </p>
+                
+                
+                
+                
+                     <p class="copyright-item">
+                         <span>Slogan:</span>
+                         <span><strong>我惭携宝剑，只为看山来.</strong></span>
+                     </p>
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tags/workReview/"># workReview</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2021/04/03/%E4%BB%8ECPU-cache%E4%B8%8E%E7%BC%93%E5%AD%98%E8%A1%8C%E5%88%B0%E9%AB%98%E6%80%A7%E8%83%BD%E9%98%9F%E5%88%97Disruptor/">从CPU cache与缓存行到高性能队列Disruptor</a>
+            
+            
+            <a class="next" rel="next" href="/2020/12/17/Netty-Study-%E4%B8%89-Netty-Demo-Echo%E6%9C%8D%E5%8A%A1%E5%99%A8-%E5%AE%A2%E6%88%B7%E7%AB%AF/">Netty Study(三):Netty-Demo(Echo服务器&客户端)</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+        </div>
+        <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© liuchanglin | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+</html>
