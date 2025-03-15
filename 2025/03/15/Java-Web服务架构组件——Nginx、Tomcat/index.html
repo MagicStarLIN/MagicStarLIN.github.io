@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="liuchanglin">
+
+
+
+
+
+<title>Java Web服务架构组件——Nginx、Tomcat | liuchanglin &#39;s blog</title>
+
+
+
+    <link rel="icon" href="/img.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body>
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">LiuChanglin&#39;s Blog</a></div>
+            <div class="menu navbar-right">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+                <input id="switch_default" type="checkbox" class="switch_default">
+                <label for="switch_default" class="toggleBtn"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">LiuChanglin&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if(toggleMenu.classList.contains("active")){
+           toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        }else{
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+        <div class="main">
+            <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    document.ready(
+        function () {
+            tocbot.init({
+                tocSelector: '.tocbot-list',
+                contentSelector: '.post-content',
+                headingSelector: 'h1, h2, h3, h4, h5',
+                collapseDepth: 1,
+                orderedList: false,
+                scrollSmooth: true,
+            })
+        }
+    )
+
+    function expand_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 6,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "collapse_toc()");
+        b.innerHTML = "Collapse all"
+    }
+
+    function collapse_toc() {
+        var b = document.querySelector(".tocbot-toc-expand");
+        tocbot.init({
+            tocSelector: '.tocbot-list',
+            contentSelector: '.post-content',
+            headingSelector: 'h1, h2, h3, h4, h5',
+            collapseDepth: 1,
+            orderedList: false,
+            scrollSmooth: true,
+        });
+        b.setAttribute("onclick", "expand_toc()");
+        b.innerHTML = "Expand all"
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">Java Web服务架构组件——Nginx、Tomcat</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">liuchanglin</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">March 15, 2025&nbsp;&nbsp;18:01:05</a>
+                        </span>
+                    
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <h2 id="一、Java-Web服务的架构"><a href="#一、Java-Web服务的架构" class="headerlink" title="一、Java Web服务的架构"></a>一、Java Web服务的架构</h2><p>互联网上的大部分应用都是Web应用，作为一个后端开发工程师了解一个web服务的架构模式时有必要的，首先下面是一个常见的<strong>高可用集群架构</strong>的示意图：</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/747b9fdaab1e4eaa9a2ea36713817e95~tplv-k3u1fbpfcp-jj-mark:3024:0:0:0:q75.awebp" alt="img"></p>
+<p>我们主要在这里了解一下和web相关的组件。</p>
+<h2 id="二、SLB、SSL"><a href="#二、SLB、SSL" class="headerlink" title="二、SLB、SSL"></a>二、SLB、SSL</h2><p>首先我们可以看到上图中最顶层的是Client客户端，也是我们的用户端，用户端发起的请求会首先进入到LoadBalance模块，也就是SLB和SSL。</p>
+<h3 id="SLB"><a href="#SLB" class="headerlink" title="SLB"></a>SLB</h3><p>SLB，全称为<strong>Server Load Balancer</strong>，即服务负载均衡器。是一种网络设备或者软件服务，可以将客户端的请求智能分发到多个后端服务，可以提升系统的可用性、扩展性和性能。</p>
+<p>主要功能包括：</p>
+<ul>
+<li>流量分发：按预设进行负载均衡，分配请求</li>
+<li>健康检查：检查监控后端服务状态，自动移除鼓掌节点</li>
+<li>会话保持：支持粘性会话，即同一用户的请求会被路由到同一个服务器</li>
+<li>安全防护：集成DDos防护、IP黑名单等安全功能</li>
+</ul>
+<p>常见的云服务负载均衡器：AWS的ALB/ELB、阿里云的SLB、腾讯云的CLB</p>
+<h3 id="SSL"><a href="#SSL" class="headerlink" title="SSL"></a>SSL</h3><p>SSL，全称为<strong>Secure Sockets Layer</strong>，是一种加密协议，用来在客户端和服务端之间建立加密通信通道，防止数据被窃听和篡改。SSL的继任者是<strong>TLS（Transport Layer Security）</strong>，但习惯上仍称为“SSL”。</p>
+<p>核心功能：</p>
+<ul>
+<li>加密传输：对HTTP明文通信进行加密</li>
+<li>身份验证：通过数字证书验证服务器身份，防止攻击。</li>
+</ul>
+<h2 id="三、Nginx"><a href="#三、Nginx" class="headerlink" title="三、Nginx"></a>三、Nginx</h2><p>众所周知，Nginx是一个<strong>反向代理服务器</strong>，主要用来处理客户端请求转发，负载均衡、整合静态资源服务。</p>
+<blockquote>
+<p>  代理其实就是一个中介，A和B本来可以直连，中间插入一个C，C就是中介。 刚开始的时候，代理多数是帮助内网client访问外网server用的 后来出现了反向代理，”反向”这个词在这儿的意思其实是指方向相反，即代理将来自外网客户端的请求转发到内网服务器，从外到内。</p>
+<ul>
+<li><strong>正向代理即是客户端代理, 代理客户端, 服务端不知道实际发起请求的客户端</strong>。</li>
+<li><strong>反向代理即是服务端代理, 代理服务端, 客户端不知道实际提供服务的服务端</strong>。</li>
+</ul>
+</blockquote>
+<p>Nginx处理请求的流程主要是：</p>
+<ul>
+<li>静态资源请求：Nginx直接返回HTML/CSS/JS等静态资源，这样做的好处是无需转发到后端，更快速的响应</li>
+<li>动态请求：Nginx根据配置将请求反向代理到后端的服务（Spring Boot）</li>
+<li>负载均衡：在多个后端服务的情况下，Nginx可以通过轮寻、加权等策略分发请求</li>
+</ul>
+<p>使用Nginx的好处：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th><strong>场景</strong></th>
+<th><strong>直接使用Tomcat</strong></th>
+<th><strong>结合Nginx</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>静态资源处理</strong></td>
+<td>Tomcat处理静态资源效率较低（占用Servlet线程）。</td>
+<td>Nginx直接处理静态资源（高性能，非阻塞I/O）。</td>
+</tr>
+<tr>
+<td><strong>高并发</strong></td>
+<td>Tomcat线程池有限，并发高时可能崩溃。</td>
+<td>Nginx处理连接池，缓冲请求，减轻Tomcat压力。</td>
+</tr>
+<tr>
+<td><strong>SSL/TLS</strong></td>
+<td>Tomcat需配置SSL证书，消耗CPU资源。</td>
+<td>Nginx统一处理SSL终端（如HTTPS），降低后端压力。</td>
+</tr>
+<tr>
+<td><strong>负载均衡</strong></td>
+<td>单点故障，无法横向扩展。</td>
+<td>Nginx分发请求到多个Spring Boot实例（集群部署）。</td>
+</tr>
+<tr>
+<td><strong>安全防护</strong></td>
+<td>直接暴露Tomcat可能被攻击（如DDoS）。</td>
+<td>Nginx可配置限流、IP黑名单、WAF（Web应用防火墙）。</td>
+</tr>
+<tr>
+<td><strong>缓存</strong></td>
+<td>Tomcat不擅长缓存静态内容。</td>
+<td>Nginx可缓存静态资源甚至动态内容，减少后端请求。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="SLB和Nginx"><a href="#SLB和Nginx" class="headerlink" title="SLB和Nginx"></a>SLB和Nginx</h3><p>即然SLB和Nginx都用来作为负载均衡，那么为什么两者还都要使用呢？</p>
+<p>如果只是考虑单出的负载均衡，那毫无疑问阿里云的SLB优越性更高。但是他们也可以作为<strong>不同层级的负载均衡</strong>，比如：</p>
+<ul>
+<li><strong>第一层：SLB作为全局流量入口</strong><ul>
+<li>主要作用：承担最外层的流量分发，处理跨地域、跨可用区的高可用和容灾。</li>
+<li>优势：<ul>
+<li>可以集成云厂商的基础设置比如自动扩容和DDos防护</li>
+<li>提供全局健康检查和故障转移，避免单点故障</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>第二层：Nginx作为业务层负载均衡</strong><ul>
+<li>主要作用：在SLB之后根据业务逻辑进行细粒度的流量分发，比如按照路径、Header等</li>
+<li>优势：<ul>
+<li>可以灵活配置路由规则</li>
+<li>处理静态资源缓存、请求过滤（限流、鉴权）</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>如果仅用SLB或者仅用Nginx，那缺陷也十分明显：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th><strong>方案</strong></th>
+<th><strong>缺点</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>仅用 SLB</strong></td>
+<td>无法实现复杂路由（如按 URL 路径分发到不同服务），静态资源处理效率低，定制化能力弱。</td>
+</tr>
+<tr>
+<td><strong>仅用 Nginx</strong></td>
+<td>单点故障风险高，跨地域容灾实现复杂，需自行维护高可用集群（如 Keepalived），运维成本高。</td>
+</tr>
+<tr>
+<td><strong>同时使用 SLB+Nginx</strong></td>
+<td>结合两者优势，SLB 保障全局高可用，Nginx 精细化控制业务流量，是生产环境的最佳实践。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="四、Tomcat"><a href="#四、Tomcat" class="headerlink" title="四、Tomcat"></a>四、Tomcat</h2><p>Tomcat是用Java开发的一个web应用服务器，也是一个Servlet/JSP容器。负责处理客户端请求，将请求传送给Servlet，并将Servlet的响应传送回客户。</p>
+<p>主要组成：</p>
+<p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20250315200445632.png" alt="image-20250315200445632"></p>
+<ul>
+<li>Tomcat Server就是整个Tomcat服务器，包含了多个Service，也负责管理和启动各个Service。</li>
+<li>Service： 一个Service包括了Connector和Engine</li>
+<li><p>Connector：Connector的作用主要就是负责处理对外网络的IO，也就是客户端的连接请求。支持多种IO模型(NIO、BIO、AIO)和应用层协议（HTTP1.1、HTTP2），主要功能就是网络通信、协议解析、Request/Response和ServletRequest/ServletResponse对象的转换。</p>
+</li>
+<li><p>Engine：所有的请求要通过Connector传递给Engine，由Engine完成业务处理。Engine中包换一个或者多个Context，每个Context对应一个Web App。</p>
+</li>
+</ul>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>liuchanglin</span>
+                    </p>
+                
+                
+                
+                
+                     <p class="copyright-item">
+                         <span>Slogan:</span>
+                         <span><strong>我惭携宝剑，只为看山来.</strong></span>
+                     </p>
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tags/Java/"># Java</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+            
+            <a class="next" rel="next" href="/2025/02/16/Java%E6%97%A5%E5%BF%97%E6%A1%86%E6%9E%B6-log4j2%E3%80%81logback/">Java日志框架-log4j2、logback</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+        </div>
+        <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© liuchanglin | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+</html>
