@@ -311,7 +311,57 @@
 </tbody>
 </table>
 </div>
-<h2 id="四、Tomcat"><a href="#四、Tomcat" class="headerlink" title="四、Tomcat"></a>四、Tomcat</h2><p>Tomcat是用Java开发的一个web应用服务器，也是一个Servlet/JSP容器。负责处理客户端请求，将请求传送给Servlet，并将Servlet的响应传送回客户。</p>
+<h2 id="四、网关"><a href="#四、网关" class="headerlink" title="四、网关"></a>四、网关</h2><p><strong>网关</strong>是分布式系统中的核心组件，充当所有外部请求的<strong>统一入口</strong>，负责将请求路由到内部服务，同时集成安全、监控、流量控制等能力。它类似于现实世界中的“海关”，对所有进出系统的流量进行统一管控。</p>
+<h3 id="网关的核心功能"><a href="#网关的核心功能" class="headerlink" title="网关的核心功能"></a><strong>网关的核心功能</strong></h3><div class="table-container">
+<table>
+<thead>
+<tr>
+<th><strong>功能</strong></th>
+<th><strong>说明</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>路由转发</strong></td>
+<td>根据请求路径、域名、Header等将流量分发到不同服务（如微服务A/B）。</td>
+</tr>
+<tr>
+<td><strong>协议转换</strong></td>
+<td>统一处理HTTP/HTTPS、gRPC、WebSocket等协议，屏蔽后端服务的协议差异。</td>
+</tr>
+<tr>
+<td><strong>身份认证与鉴权</strong></td>
+<td>集中管理API访问权限（如JWT验证、OAuth2.0）。</td>
+</tr>
+<tr>
+<td><strong>流量控制</strong></td>
+<td>实现限流（Rate Limiting）、熔断（Circuit Breaker）、请求排队等保护后端服务。</td>
+</tr>
+<tr>
+<td><strong>日志与监控</strong></td>
+<td>记录请求日志，集成Prometheus、SkyWalking等监控工具。</td>
+</tr>
+<tr>
+<td><strong>请求/响应转换</strong></td>
+<td>修改请求头、参数，或对响应结果进行过滤、重写（如隐藏内部接口细节）。</td>
+</tr>
+<tr>
+<td><strong>安全防护</strong></td>
+<td>防重放攻击、防SQL注入、IP黑白名单等。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="网关的意义"><a href="#网关的意义" class="headerlink" title="网关的意义"></a><strong>网关的意义</strong></h3><ul>
+<li><strong>网关的核心价值</strong>：<br>作为系统的“智能入口”，统一处理<strong>业务相关</strong>的横切关注点（Cross-Cutting Concerns），简化服务实现，提升安全性和可维护性。  </li>
+<li><strong>与负载均衡器的关系</strong>：  <ul>
+<li>负载均衡器关注<strong>流量分发</strong>，确保高可用和性能。  </li>
+<li>网关关注<strong>业务逻辑</strong>，实现协议转换、安全管控等高级功能。  </li>
+</ul>
+</li>
+</ul>
+<p>可以使用Netty开发网关服务</p>
+<h2 id="五、Tomcat"><a href="#五、Tomcat" class="headerlink" title="五、Tomcat"></a>五、Tomcat</h2><p>Tomcat是用Java开发的一个web应用服务器，也是一个Servlet/JSP容器。负责处理客户端请求，将请求传送给Servlet，并将Servlet的响应传送回客户。</p>
 <p>主要组成：</p>
 <p><img src="https://magic-picgo.oss-cn-beijing.aliyuncs.com/hexoBlog/image-20250315200445632.png" alt="image-20250315200445632"></p>
 <ul>
